@@ -1,4 +1,5 @@
 html, body {
+  overscroll-behavior: none;
   margin: 0; height: 100%; overflow: hidden; background: #8fd3ff;
   touch-action: none; user-select: none; -webkit-user-select: none;
   -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
@@ -129,3 +130,27 @@ body.touch .keys { display: none; }
 #leaderboard .score { grid-area: score; font-weight: 900; align-self: center; }
 #leaderboard li.me { background: rgba(255,210,63,.3); outline: 2px solid #ffd23f; }
 #leaderboard li.empty { display: block; opacity: .8; }
+
+/* fullscreen button: only on touch devices whose browser supports fullscreen */
+#fsBtn {
+  display: none; position: fixed; top: calc(env(safe-area-inset-top) + 8px);
+  right: calc(env(safe-area-inset-right) + 62px);
+  width: 42px; height: 42px; border-radius: 12px; border: 2px solid rgba(255,255,255,.6);
+  background: rgba(0,0,0,.18); color: #fff; font-size: 20px; line-height: 1; cursor: pointer;
+}
+body.touch.fs-ok #fsBtn { display: block; }
+
+/* nudge portrait phone players to rotate (the game still works upright) */
+#rotateHint { display: none; font-weight: 800; color: #ffe08a; }
+@media (orientation: portrait) and (pointer: coarse) { #rotateHint { display: block; } }
+
+/* touch buttons only while playing, not on top of the menus */
+body:has(#overlay:not(.hidden)) #touch { display: none; }
+
+/* keep the two cat cards side by side on narrow phones */
+@media (max-width: 420px) {
+  #picker { flex-wrap: nowrap; width: 100%; gap: 10px; }
+  .pick { width: auto; flex: 1 1 0; min-width: 0; padding: 8px 6px 10px; }
+  .pick canvas { width: 100%; max-width: 132px; height: auto; aspect-ratio: 132 / 92; }
+  .pick .desc { font-size: 12px; }
+}

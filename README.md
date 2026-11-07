@@ -43,6 +43,23 @@ npm run dev        # serves the game + API at http://localhost:GAME_PORT (from .
 
 Or just open `public/index.html` in a browser to play without saving scores.
 
+## Phones and controllers
+
+- **Touch:** on-screen ◀ ▶, JUMP and ability buttons appear automatically on phones and tablets.
+- **Controllers:** any controller the browser recognizes (Backbone, Razer Kishi, Xbox, PlayStation, Switch Pro over Bluetooth or USB):
+
+  | Control | Action |
+  |---|---|
+  | D-pad / left stick | Move (and pick a cat on the title screen) |
+  | A / Cross | Jump, start the game |
+  | B, X, RB or RT | Ability (POUNCE / GROWL) |
+  | Start / Menu | Pause and resume |
+
+- **Fullscreen:** the ⛶ button (top right) goes fullscreen and locks to landscape where the phone allows it.
+- **Add to Home Screen:** opens like an app with its own icon. On iPhone use Share → Add to Home Screen. Android's install prompt needs the game served over HTTPS (plain `http://` on your local network still works for playing).
+- **Vibration:** on hits, stomps, abilities and winning (Android phones and rumble-capable controllers; iPhones don't allow web vibration).
+- The screen stays awake while you play.
+
 ## Score API
 
 | Method | Path | What it does |
@@ -63,7 +80,8 @@ docker compose down -v                                       # wipe all scores (
 ## Layout
 
 - `public/`: everything the browser loads. Put new sprites, sounds, etc. here.
-  - `index.html`, `css/`, `js/` (`js/game.js` main loop, `js/cats.js`, `js/roommates.js`, `js/scores.js`)
+  - `index.html`, `css/`, `js/` (`js/game.js` main loop, `js/cats.js`, `js/roommates.js`, `js/scores.js`, `js/mobile.js`)
+  - `manifest.webmanifest`, `icons/`: home-screen app name and icons
 - `server/`: score API
 - `Dockerfile`, `nginx.conf`: the web container, which serves `public/`
 - `source/`: reference photos and `design.json` (not shipped in the container)

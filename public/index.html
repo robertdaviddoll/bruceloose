@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#8fd3ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bruce Loose">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Bruce Loose</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -16,6 +22,7 @@
   <span id="hudAbility"></span>
 </div>
 <div id="toast" role="status"></div>
+<button id="fsBtn" aria-label="Fullscreen">⛶</button>
 <button id="pauseBtn" aria-label="Pause">II</button>
 
 <div id="touch">
@@ -54,7 +61,8 @@
       <span class="desc">Stuns nearby roommates and swats away projectiles. Hold jump to float on her fluff.</span>
     </button>
   </div>
-  <p class="keys">← → / A D to move · Space / W / ↑ to jump · X / Shift for ability · P to pause</p>
+  <p id="rotateHint">Turn your phone sideways for a bigger view.</p>
+  <p class="keys">← → / A D to move · Space / W / ↑ to jump · X / Shift for ability · P to pause · Controllers work too</p>
   <div class="go" id="ovBtn">Play</div>
 </div>
 
@@ -64,6 +72,7 @@
 <script src="js/canvas2d-renderer.js"></script>
 <script src="js/cats.js"></script>
 <script src="js/roommates.js"></script>
+<script src="js/mobile.js"></script>
 <script src="js/scores.js"></script>
 <script src="js/game.js"></script>
 </body>

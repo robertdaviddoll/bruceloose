@@ -296,15 +296,18 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     if (state === 'title' || state === 'over' || state === 'won') resetGame();
     state = 'play'; ui.overlay.classList.add('hidden');
     Scoreboard.hide();
+    ScreenAwake.on();
   }
   function pause() {
     if (state !== 'play') return;
     state = 'paused'; showOverlay('Paused', 'Take a breather.', 'Resume', false);
+    ScreenAwake.off();
   }
   function hurt() {
     if (player.inv > 0) return;
-    lives--; sfx('hurt'); updateHud();
+    lives--; sfx('hurt'); Haptics.buzz('hurt'); updateHud();
     if (lives <= 0) {
+      ScreenAwake.off();
       state = 'over'; showOverlay('Game Over', `Score ${score} · Coins ${coinCount}/${coins.length}`, 'Try again');
       Scoreboard.show(runResult('died'));
       return;
@@ -321,7 +324,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   const touchActs = new Map();   // pointerId -> act
   function recomputeInput() {
     const acts = new Set(touchActs.values());
-    const held = (a) => acts.has(a) || [...keys].some(k => KEYMAP[k] === a);
+    const held = (a) => acts.has(a) || Gamepads.held.has(a) || [...keys].some(k => KEYMAP[k] === a);
     const wasJump = input.jump, wasSpecial = input.special;
     input.left = held('left'); input.right = held('right');
     input.jump = held('jump'); input.special = held('special');
@@ -364,6 +367,29 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   addEventListener('keydown', () => document.body.classList.remove('touch'));
 
   ui.overlay.addEventListener('click', startOrResume);
+
+  // fullscreen button (phones/tablets that support it)
+  const fsBtn = document.getElementById('fsBtn');
+  if (fsBtn && Fullscreen.supported) {
+    document.body.classList.add('fs-ok');
+    fsBtn.addEventListener('click', (e) => { e.stopPropagation(); Fullscreen.toggle(); });
+  }
+
+  // game controller: poll once per frame
+  function pollGamepad() {
+    const pad = Gamepads.read();
+    if (pad.connectedNow) { document.body.classList.remove('touch'); toast('Controller connected'); }
+    if (!pad.changed) return;
+    const inMenu = state !== 'play';
+    if (inMenu) {
+      const picking = state === 'title' || state === 'over' || state === 'won';
+      if (picking && pad.pressed.has('left')) setCharacter('bruce');
+      if (picking && pad.pressed.has('right')) setCharacter('gremlin');
+      if (pad.pressed.has('jump') || pad.pressed.has('start')) startOrResume();
+    } else if (pad.pressed.has('start')) pause();
+    recomputeInput();
+    if (inMenu) { input.jumpPressed = false; input.specialPressed = false; }   // the button that started the game shouldn't also jump
+  }
   document.getElementById('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); state === 'play' ? pause() : state === 'paused' && startOrResume(); });
   document.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -371,10 +397,11 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   function knockOut(e) {
     e.alive = false; e.squash = 0.35; e.stun = 0; e.dizzy.visible = false;
     e.body.scale.set(1.25, 0.3, 1); e.body.rotation.z = 0;
-    score += 100; sfx('stomp'); updateHud();
+    score += 100; sfx('stomp'); Haptics.buzz('stomp'); updateHud();
   }
   function useAbility(p, cat) {
     p.cool = cat.cooldown;
+    Haptics.buzz('ability');
     if (character === 'bruce') {
       // POUNCE: a short claws-out dash with a little hop
       p.dash = POUNCE_TIME;
@@ -536,7 +563,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     // goal
     if (p.x + p.w > goalX) {
       score += lives * 500 + (coinCount === coins.length ? 2000 : 0);
-      updateHud(); sfx('win'); state = 'won';
+      updateHud(); sfx('win'); Haptics.buzz('win'); ScreenAwake.off(); state = 'won';
       showOverlay('You made it!', `Score ${score} · Coins ${coinCount}/${coins.length}${coinCount === coins.length ? ' · Perfect!' : ''}`, 'Play again');
       Scoreboard.show(runResult('won'));
     }
@@ -618,6 +645,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   let last = performance.now(), acc = 0;
   function frame(now) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    pollGamepad();
     if (state === 'play') {
       acc += dt;
       while (acc >= STEP && state === 'play') { step(STEP); acc -= STEP; }
