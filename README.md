@@ -75,9 +75,9 @@ Menus work with touch/mouse, keyboard (arrows, Enter/Space, Esc to go back) and 
 |---|---|---|
 | GET | `/api/health` | `{ "ok": true }` |
 | GET | `/api/scores?limit=10` | Top scores (max 50) |
-| POST | `/api/scores` | Save `{ name, score, coins, totalCoins, character, result, timeMs, device }`, returns `{ id, rank }` |
+| POST | `/api/scores` | Save `{ name, score, coins, totalCoins, character, result, timeMs, device, checkpoints, totalCheckpoints }`, returns `{ id, rank }` |
 
-`device` is `phone`, `tablet` or `desktop` (optional; shown as an icon on the score lists). Names are 1-16 characters. Saves are limited per IP (`SAVES_PER_MINUTE`, default 6 per minute).
+`device` is `phone`, `tablet` or `desktop`, and `checkpoints` / `totalCheckpoints` count checkpoints passed (all optional; shown as icons on the score lists). Names are 1-16 characters. Saves are limited per IP (`SAVES_PER_MINUTE`, default 6 per minute).
 
 ## Backing up or resetting scores
 

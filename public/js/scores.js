@@ -68,7 +68,22 @@ const Scoreboard = (() => {
         cell('rank', i + 1),
         (() => { const n = cell('name', ''); n.append(deviceIcon(s.device), cell('who', s.name)); return n; })(),
         cell('meta', `${CAT_NAMES[s.character] || s.character} · ${s.result === 'won' ? 'won' : 'died'} · ${fmtTime(s.timeMs)}`),
-        cell('score', s.score.toLocaleString()),
+        (() => {
+          const sc = cell('score', '');
+          if (Number.isInteger(s.checkpoints)) {         // older scores don't have this
+            const cp = document.createElement('span');
+            cp.className = 'cp';
+            const label = `Passed ${s.checkpoints} of ${s.totalCheckpoints} checkpoint${s.totalCheckpoints === 1 ? '' : 's'}`;
+            cp.title = label; cp.setAttribute('role', 'img'); cp.setAttribute('aria-label', label);
+            cp.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+              + '<line x1="5" y1="22" x2="5" y2="3"/><path d="M5 4h12l-3 4 3 4H5" fill="currentColor"/></svg>';
+            const n = document.createElement('span'); n.textContent = s.checkpoints; n.setAttribute('aria-hidden', 'true');
+            cp.append(n);
+            sc.append(cp);
+          }
+          sc.append(cell('pts', s.score.toLocaleString()));
+          return sc;
+        })(),
       );
       return li;
     }));

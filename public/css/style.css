@@ -255,3 +255,8 @@ body:has(#overlay:not(.hidden)) #pauseBtn { visibility: hidden; }
 .scores .device { flex: none; display: inline-flex; width: 18px; height: 18px; opacity: .85; }
 .scores .device svg { width: 100%; height: 100%; }
 .scores .device.unknown { width: 0; }
+
+/* checkpoint flag + count beside each score */
+.scores .score { display: flex; align-items: center; gap: 10px; }
+.scores .cp { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 800; color: #9be89b; }
+.scores .cp svg { width: 15px; height: 15px; }
