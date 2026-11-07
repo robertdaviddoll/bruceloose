@@ -1,0 +1,12 @@
+{
+  "name": "bruce-loose-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Score API for Bruce Loose (SQLite, no dependencies)",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "dev": "STATIC_DIR=.. node --disable-warning=ExperimentalWarning server.js"
+  }
+}

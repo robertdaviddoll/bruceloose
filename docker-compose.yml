@@ -5,4 +5,19 @@ services:
     container_name: bruce-loose
     ports:
       - "8080:80"   # play at http://localhost:8080
+    depends_on:
+      - api
     restart: unless-stopped
+
+  api:
+    build: ./server
+    image: bruce-loose-api
+    container_name: bruce-loose-api
+    environment:
+      DB_PATH: /data/scores.db
+    volumes:
+      - scores:/data   # SQLite database lives here and survives rebuilds
+    restart: unless-stopped
+
+volumes:
+  scores:

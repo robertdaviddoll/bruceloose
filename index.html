@@ -28,6 +28,18 @@
 <div id="overlay" class="picking">
   <h1 id="ovTitle">Bruce Loose</h1>
   <p id="ovText">Pick your cat and run to the flag. Stomp the roommates, dodge Bobby's elbow drops and Valerie's driving, and if you fall in a gap, Steven P has your back (once per checkpoint).</p>
+  <div id="scorebox" hidden>
+    <form id="scoreForm" autocomplete="off">
+      <label for="playerName">Save your score</label>
+      <div class="row">
+        <input id="playerName" maxlength="16" placeholder="Your name" enterkeyhint="done" spellcheck="false">
+        <button id="saveScore" type="submit">Save</button>
+      </div>
+    </form>
+    <p id="scoreStatus" role="status"></p>
+    <h2>Top 10</h2>
+    <ol id="leaderboard"></ol>
+  </div>
   <div id="picker">
     <button class="pick" data-cat="bruce">
       <canvas aria-hidden="true"></canvas>
@@ -52,6 +64,7 @@
 <script src="js/canvas2d-renderer.js"></script>
 <script src="js/cats.js"></script>
 <script src="js/roommates.js"></script>
+<script src="js/scores.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

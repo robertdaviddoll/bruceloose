@@ -266,8 +266,11 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     camX = player.x; camY = player.y + viewH * 0.15;
     rescue.t = 0; rescue.helperT = 0; rescue.lastSafe = null; helper.visible = false;
   }
+  let runTime = 0;   // seconds played this run (saved with the score)
+  const runResult = (result) => ({ score, coins: coinCount, totalCoins: coins.length, character, result, timeMs: Math.round(runTime * 1000) });
+
   function resetGame() {
-    score = 0; lives = 3; coinCount = 0;
+    score = 0; lives = 3; coinCount = 0; runTime = 0;
     coins.forEach(c => { c.taken = false; c.mesh.visible = true; });
     enemies.forEach(e => { resetRoommate(e); e.mesh.visible = true; e.body.scale.set(1, 1, 1); });
     clearProjectiles();
@@ -292,6 +295,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     initAudio();
     if (state === 'title' || state === 'over' || state === 'won') resetGame();
     state = 'play'; ui.overlay.classList.add('hidden');
+    Scoreboard.hide();
   }
   function pause() {
     if (state !== 'play') return;
@@ -300,7 +304,11 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   function hurt() {
     if (player.inv > 0) return;
     lives--; sfx('hurt'); updateHud();
-    if (lives <= 0) { state = 'over'; showOverlay('Game Over', `Score ${score} · Coins ${coinCount}/${coins.length}`, 'Try again'); return; }
+    if (lives <= 0) {
+      state = 'over'; showOverlay('Game Over', `Score ${score} · Coins ${coinCount}/${coins.length}`, 'Try again');
+      Scoreboard.show(runResult('died'));
+      return;
+    }
     spawn(checkpoint); player.inv = 1.5;
     clearProjectiles();
   }
@@ -423,6 +431,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
 
   function step(dt) {
     const p = player;
+    runTime += dt;
     const cat = CATS[character];
     if (rescue.helperT > 0) {
       rescue.helperT -= dt;
@@ -529,6 +538,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
       score += lives * 500 + (coinCount === coins.length ? 2000 : 0);
       updateHud(); sfx('win'); state = 'won';
       showOverlay('You made it!', `Score ${score} · Coins ${coinCount}/${coins.length}${coinCount === coins.length ? ' · Perfect!' : ''}`, 'Play again');
+      Scoreboard.show(runResult('won'));
     }
 
     p.anim += dt * (p.onGround ? Math.abs(p.vx) * 2.2 : 0);
