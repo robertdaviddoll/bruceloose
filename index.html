@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#8fd3ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Bruce Loose</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="hud">
+  <span id="hudCoins">● 0/0</span>
+  <span id="hudScore">0</span>
+  <span id="hudLives">♥♥♥</span>
+  <span id="hudAbility"></span>
+</div>
+<div id="toast" role="status"></div>
+<button id="pauseBtn" aria-label="Pause">II</button>
+
+<div id="touch">
+  <div class="tbtn" id="tLeft"  data-act="left">◀</div>
+  <div class="tbtn" id="tRight" data-act="right">▶</div>
+  <div class="tbtn" id="tSpecial" data-act="special">POUNCE</div>
+  <div class="tbtn" id="tJump"  data-act="jump">JUMP</div>
+</div>
+
+<div id="overlay" class="picking">
+  <h1 id="ovTitle">Bruce Loose</h1>
+  <p id="ovText">Pick your cat and run to the flag. Stomp the roommates, dodge Bobby's elbow drops and Valerie's driving, and if you fall in a gap, Steven P has your back (once per checkpoint).</p>
+  <div id="picker">
+    <button class="pick" data-cat="bruce">
+      <canvas aria-hidden="true"></canvas>
+      <strong>Bruce</strong>
+      <span class="ab">POUNCE</span>
+      <span class="desc">Dashes claws-first, knocking out roommates and smashing thrown junk.</span>
+    </button>
+    <button class="pick" data-cat="gremlin">
+      <canvas aria-hidden="true"></canvas>
+      <strong>Gremlin</strong>
+      <span class="ab">GROWL</span>
+      <span class="desc">Stuns nearby roommates and swats away projectiles. Hold jump to float on her fluff.</span>
+    </button>
+  </div>
+  <p class="keys">← → / A D to move · Space / W / ↑ to jump · X / Shift for ability · P to pause</p>
+  <div class="go" id="ovBtn">Play</div>
+</div>
+
+<script src="js/errors.js"></script>
+<script src="js/config.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/canvas2d-renderer.js"></script>
+<script src="js/cats.js"></script>
+<script src="js/roommates.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
