@@ -1,0 +1,4 @@
+# reference photos and notes aren't needed to run the game
+source/
+.git/
+*.md

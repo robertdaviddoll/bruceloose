@@ -1,0 +1,8 @@
+services:
+  bruce-loose:
+    build: .
+    image: bruce-loose
+    container_name: bruce-loose
+    ports:
+      - "8080:80"   # play at http://localhost:8080
+    restart: unless-stopped
