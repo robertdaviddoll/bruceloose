@@ -72,6 +72,19 @@ const Fullscreen = (() => {
   return { supported, toggle, isOn };
 })();
 
+// ---------- What kind of device is this? (saved with scores) ----------
+// phone: touch screen, short side under 600px · tablet: bigger touch screen (incl. iPads) · desktop: everything else
+const Device = (() => {
+  const touch = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+  const shortSide = Math.min(screen.width, screen.height);
+  const ua = navigator.userAgent;
+  // tablets first: iPads say "Mobile" too, and newer iPads pretend to be Macs (but have a touch screen)
+  const tabletUA = /iPad|Tablet/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua)) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const phoneUA = navigator.userAgentData ? navigator.userAgentData.mobile : /iPhone|iPod|Android.+Mobile|Mobi/i.test(ua);
+  const type = !touch ? 'desktop' : tabletUA ? 'tablet' : (phoneUA || shortSide < 600) ? 'phone' : 'tablet';
+  return { type };
+})();
+
 // ---------- Keep the screen from dimming while playing ----------
 const ScreenAwake = (() => {
   let lock = null;

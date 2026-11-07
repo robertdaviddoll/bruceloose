@@ -9,6 +9,23 @@ const Scoreboard = (() => {
   const status = document.getElementById('scoreStatus');
   const list = document.getElementById('leaderboard');
   const CAT_NAMES = { bruce: 'Bruce', gremlin: 'Gremlin' };
+
+  // little device icons (drawn in currentColor so they match the text)
+  const DEVICE_ICONS = {
+    phone:   { label: 'Played on a phone',    svg: '<rect x="7" y="2" width="10" height="20" rx="2.5"/><line x1="11" y1="18.5" x2="13" y2="18.5"/>' },
+    tablet:  { label: 'Played on a tablet',   svg: '<rect x="4" y="2" width="16" height="20" rx="2.5"/><line x1="11" y1="18.5" x2="13" y2="18.5"/>' },
+    desktop: { label: 'Played on a computer', svg: '<rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>' },
+  };
+  function deviceIcon(type) {
+    const d = DEVICE_ICONS[type];
+    const span = document.createElement('span');
+    span.className = 'device' + (d ? '' : ' unknown');
+    if (!d) return span;                                  // scores saved before devices were tracked
+    span.title = d.label;
+    span.setAttribute('role', 'img'); span.setAttribute('aria-label', d.label);
+    span.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d.svg}</svg>`;
+    return span;
+  }
   const NAME_KEY = 'bruceLoosePlayer';
 
   let available = false;   // backend answered /api/health
@@ -49,7 +66,7 @@ const Scoreboard = (() => {
       const cell = (cls, text) => { const span = document.createElement('span'); span.className = cls; span.textContent = text; return span; };
       li.append(
         cell('rank', i + 1),
-        cell('name', s.name),
+        (() => { const n = cell('name', ''); n.append(deviceIcon(s.device), cell('who', s.name)); return n; })(),
         cell('meta', `${CAT_NAMES[s.character] || s.character} · ${s.result === 'won' ? 'won' : 'died'} · ${fmtTime(s.timeMs)}`),
         cell('score', s.score.toLocaleString()),
       );

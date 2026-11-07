@@ -279,7 +279,8 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     rescue.t = 0; rescue.helperT = 0; rescue.lastSafe = null; helper.visible = false;
   }
   let runTime = 0;   // seconds played this run (saved with the score)
-  const runResult = (result) => ({ score, coins: coinCount, totalCoins: coins.length, character, result, timeMs: Math.round(runTime * 1000) });
+  const runResult = (result) => ({ score, coins: coinCount, totalCoins: coins.length, character, result,
+                                   timeMs: Math.round(runTime * 1000), device: Device.type });
 
   function resetGame() {
     score = 0; lives = 3; coinCount = 0; runTime = 0;

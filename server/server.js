@@ -35,12 +35,16 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_scores_rank ON scores (score DESC, time_ms ASC);
 `);
+// added later: what the run was played on (phone / tablet / desktop). Older rows stay NULL.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('scores') WHERE name = 'device'`).get()) {
+  db.exec(`ALTER TABLE scores ADD COLUMN device TEXT`);
+}
 const insertScore = db.prepare(`
-  INSERT INTO scores (name, score, coins, total_coins, character, result, time_ms)
-  VALUES (?, ?, ?, ?, ?, ?, ?)`);
+  INSERT INTO scores (name, score, coins, total_coins, character, result, time_ms, device)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
 const topScores = db.prepare(`
   SELECT id, name, score, coins, total_coins AS totalCoins, character, result,
-         time_ms AS timeMs, created_at AS createdAt
+         time_ms AS timeMs, device, created_at AS createdAt
   FROM scores ORDER BY score DESC, time_ms ASC, id ASC LIMIT ?`);
 const rankOf = db.prepare(`
   SELECT COUNT(*) AS ahead FROM scores
@@ -49,6 +53,7 @@ const rankOf = db.prepare(`
 // ---------- validation ----------
 const CHARACTERS = new Set(['bruce', 'gremlin']);
 const RESULTS = new Set(['won', 'died']);
+const DEVICES = new Set(['phone', 'tablet', 'desktop']);
 const isInt = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
 
 function validate(body) {
@@ -61,9 +66,10 @@ function validate(body) {
   if (!isInt(body.coins, 0, body.totalCoins)) return 'coins must be between 0 and totalCoins.';
   if (!CHARACTERS.has(body.character)) return 'character must be "bruce" or "gremlin".';
   if (!RESULTS.has(body.result)) return 'result must be "won" or "died".';
+  if (body.device !== undefined && !DEVICES.has(body.device)) return 'device must be "phone", "tablet" or "desktop".';
   if (!isInt(body.timeMs, 0, 24 * 3600 * 1000)) return 'timeMs is out of range.';
   return { name, score: body.score, coins: body.coins, totalCoins: body.totalCoins,
-           character: body.character, result: body.result, timeMs: body.timeMs };
+           character: body.character, result: body.result, timeMs: body.timeMs, device: body.device || null };
 }
 
 // ---------- tiny per-IP rate limit for saves ----------
@@ -137,7 +143,7 @@ const server = http.createServer(async (req, res) => {
       const v = validate(await readJson(req));
       if (typeof v === 'string') return send(res, 400, { error: v });
       if (!allowSave(clientIp(req))) return send(res, 429, { error: 'Too many saves. Try again in a minute.' });
-      const { lastInsertRowid } = insertScore.run(v.name, v.score, v.coins, v.totalCoins, v.character, v.result, v.timeMs);
+      const { lastInsertRowid } = insertScore.run(v.name, v.score, v.coins, v.totalCoins, v.character, v.result, v.timeMs, v.device);
       const id = Number(lastInsertRowid);
       const { ahead } = rankOf.get(v.score, v.score, v.timeMs, v.score, v.timeMs, id);
       return send(res, 201, { id, rank: ahead + 1 });
