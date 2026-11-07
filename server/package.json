@@ -6,7 +6,7 @@
   "description": "Score API for Bruce Loose (SQLite, no dependencies)",
   "engines": { "node": ">=22.13" },
   "scripts": {
-    "start": "node --disable-warning=ExperimentalWarning server.js",
-    "dev": "STATIC_DIR=../public node --disable-warning=ExperimentalWarning server.js"
+    "start": "node --env-file-if-exists=../.env --disable-warning=ExperimentalWarning server.js",
+    "dev": "STATIC_DIR=../public node --env-file-if-exists=../.env --disable-warning=ExperimentalWarning server.js"
   }
 }

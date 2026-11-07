@@ -2,3 +2,5 @@ source/
 server/
 .git/
 *.md
+.env
+.env.*

@@ -12,7 +12,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-const PORT = Number(process.env.PORT) || 3000;
+// PORT is set inside Docker; GAME_PORT comes from .env when running with `npm run dev`.
+const PORT = Number(process.env.PORT || process.env.GAME_PORT) || 3000;
 const DB_PATH = process.env.DB_PATH || path.join(import.meta.dirname, 'data', 'scores.db');
 const STATIC_DIR = process.env.STATIC_DIR ? path.resolve(process.env.STATIC_DIR) : null;
 
@@ -66,7 +67,7 @@ function validate(body) {
 }
 
 // ---------- tiny per-IP rate limit for saves ----------
-const SAVES_PER_MINUTE = 6;
+const SAVES_PER_MINUTE = Math.max(1, Number(process.env.SAVES_PER_MINUTE) || 6);
 const recent = new Map();   // ip -> [timestamps]
 function allowSave(ip) {
   const now = Date.now();

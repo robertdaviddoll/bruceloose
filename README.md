@@ -2,13 +2,29 @@
 
 A three.js side-scroller starring Bruce and Gremlin, with the roommates as enemies.
 
+## Settings
+
+Copy the example settings file and edit it:
+
+```bash
+cp .env.example .env
+```
+
+| Setting | Default | What it does |
+|---|---|---|
+| `GAME_PORT` | `8080` | Port to play on (`http://localhost:GAME_PORT`) |
+| `SAVES_PER_MINUTE` | `6` | Score saves allowed per IP address per minute |
+
+`.env` is git-ignored so your local settings never get committed. Without a `.env`, the defaults are used.
+
 ## Run with Docker
 
 ```bash
 docker compose up -d --build
 ```
 
-Play at http://localhost:8080. Stop with `docker compose down`.
+Play at http://localhost:8080 (or your `GAME_PORT`). Stop with `docker compose down`.
+After changing `.env`, run `docker compose up -d` again to apply it.
 
 Two services:
 - `bruce-loose`: nginx serving the game, forwarding `/api` to the score server
@@ -22,7 +38,7 @@ Needs Node 22.13 or newer. No `npm install` required.
 
 ```bash
 cd server
-npm run dev        # serves the game + API at http://localhost:3000
+npm run dev        # serves the game + API at http://localhost:GAME_PORT (from ../.env, else 3000)
 ```
 
 Or just open `public/index.html` in a browser to play without saving scores.
@@ -35,7 +51,7 @@ Or just open `public/index.html` in a browser to play without saving scores.
 | GET | `/api/scores?limit=10` | Top scores (max 50) |
 | POST | `/api/scores` | Save `{ name, score, coins, totalCoins, character, result, timeMs }`, returns `{ id, rank }` |
 
-Names are 1-16 characters. Saves are limited to 6 per minute per IP.
+Names are 1-16 characters. Saves are limited per IP (`SAVES_PER_MINUTE`, default 6 per minute).
 
 ## Backing up or resetting scores
 
