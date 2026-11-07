@@ -7,6 +7,6 @@
   "engines": { "node": ">=22.13" },
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning server.js",
-    "dev": "STATIC_DIR=.. node --disable-warning=ExperimentalWarning server.js"
+    "dev": "STATIC_DIR=../public node --disable-warning=ExperimentalWarning server.js"
   }
 }

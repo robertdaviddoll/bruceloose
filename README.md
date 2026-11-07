@@ -25,7 +25,7 @@ cd server
 npm run dev        # serves the game + API at http://localhost:3000
 ```
 
-Or just open `index.html` in a browser to play without saving scores.
+Or just open `public/index.html` in a browser to play without saving scores.
 
 ## Score API
 
@@ -46,6 +46,8 @@ docker compose down -v                                       # wipe all scores (
 
 ## Layout
 
-- `index.html`, `css/`, `js/`: the game (`js/game.js` main loop, `js/cats.js`, `js/roommates.js`, `js/scores.js`)
+- `public/`: everything the browser loads. Put new sprites, sounds, etc. here.
+  - `index.html`, `css/`, `js/` (`js/game.js` main loop, `js/cats.js`, `js/roommates.js`, `js/scores.js`)
 - `server/`: score API
+- `Dockerfile`, `nginx.conf`: the web container, which serves `public/`
 - `source/`: reference photos and `design.json` (not shipped in the container)

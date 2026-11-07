@@ -5,7 +5,7 @@
 //   GET  /api/scores?limit=10     -> top scores
 //   POST /api/scores              -> save a score, returns { id, rank }
 //
-// Set STATIC_DIR to also serve the game files (handy for running without Docker).
+// Set STATIC_DIR (the public/ folder) to also serve the game files, handy for running without Docker.
 
 import http from 'node:http';
 import fs from 'node:fs';
@@ -107,11 +107,13 @@ const clientIp = (req) => req.headers['x-real-ip'] || req.socket.remoteAddress |
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
                 '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 function serveStatic(req, res, pathname) {
-  const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname).replace(/^\/+/, '');
+  let rel;
+  try { rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname).replace(/^\/+/, ''); }
+  catch { return send(res, 400, { error: 'Bad path.' }); }
   const file = path.resolve(STATIC_DIR, rel);
-  // only the game itself: index.html, css/ and js/ (never server/, source/ or the database)
-  const allowed = rel === 'index.html' || /^(css|js)\/[\w.-]+$/.test(rel);
-  if (!allowed || !file.startsWith(STATIC_DIR + path.sep)) return send(res, 404, { error: 'Not found.' });
+  // anything inside public/, nothing outside it, no hidden files
+  const inside = file.startsWith(STATIC_DIR + path.sep);
+  if (!inside || rel.split('/').some(part => part.startsWith('.'))) return send(res, 404, { error: 'Not found.' });
   fs.readFile(file, (err, data) => {
     if (err) return send(res, 404, { error: 'Not found.' });
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });

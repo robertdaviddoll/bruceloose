@@ -1,1 +1,3 @@
 source/*
+server/data/
+node_modules/
