@@ -32,41 +32,130 @@
   <div class="tbtn" id="tJump"  data-act="jump">JUMP</div>
 </div>
 
-<div id="overlay" class="picking">
-  <h1 id="ovTitle">Bruce Loose</h1>
-  <p id="ovText">Pick your cat and run to the flag. Stomp the roommates, dodge Bobby's elbow drops and Valerie's driving, and if you fall in a gap, Steven P has your back (once per checkpoint).</p>
-  <div id="scorebox" hidden>
-    <form id="scoreForm" autocomplete="off">
-      <label for="playerName">Save your score</label>
-      <div class="row">
-        <input id="playerName" maxlength="16" placeholder="Your name" enterkeyhint="done" spellcheck="false">
-        <button id="saveScore" type="submit">Save</button>
+<div id="overlay">
+  <!-- Main menu -->
+  <section class="screen active" data-screen="main">
+    <h1>Bruce Loose</h1>
+    <p class="tagline">Two cats. Six roommates. One flag.</p>
+    <p id="menuError" class="error" role="alert" hidden></p>
+    <nav class="menu">
+      <button class="btn primary" data-go="select" data-autofocus>Play</button>
+      <button class="btn" data-go="options">Options</button>
+      <button class="btn" data-go="info">Characters</button>
+      <button class="btn" data-go="fame">Hall of Fame</button>
+    </nav>
+    <p id="rotateHint">Turn your phone sideways for a bigger view.</p>
+    <p class="keys">← → / A D to move · Space / W / ↑ to jump · X / Shift for ability · P to pause · Controllers work too</p>
+  </section>
+
+  <!-- Pick a cat -->
+  <section class="screen" data-screen="select">
+    <h2>Pick your cat</h2>
+    <div id="picker">
+      <button class="pick" data-cat="bruce">
+        <canvas aria-hidden="true"></canvas>
+        <strong>Bruce</strong>
+        <span class="ab">POUNCE</span>
+        <span class="desc">Dashes claws-first, knocking out roommates and smashing thrown junk.</span>
+      </button>
+      <button class="pick" data-cat="gremlin">
+        <canvas aria-hidden="true"></canvas>
+        <strong>Gremlin</strong>
+        <span class="ab">GROWL</span>
+        <span class="desc">Stuns nearby roommates and swats away projectiles. Hold jump to float on her fluff.</span>
+      </button>
+    </div>
+    <div class="actions">
+      <button class="btn" data-back>Back</button>
+      <button class="btn primary" id="startBtn" data-autofocus>Start</button>
+    </div>
+  </section>
+
+  <!-- Options -->
+  <section class="screen" data-screen="options">
+    <h2>Options</h2>
+    <div class="opts">
+      <div class="opt"><span>Sound</span><button class="toggle" id="optSound" aria-pressed="true">On</button></div>
+      <div class="opt">
+        <label for="optVolume">Volume</label>
+        <span class="range"><input type="range" id="optVolume" min="0" max="100" step="10"><output id="optVolumeVal">80%</output></span>
       </div>
-    </form>
-    <p id="scoreStatus" role="status"></p>
-    <h2>Top 10</h2>
-    <ol id="leaderboard"></ol>
-  </div>
-  <div id="picker">
-    <button class="pick" data-cat="bruce">
-      <canvas aria-hidden="true"></canvas>
-      <strong>Bruce</strong>
-      <span class="ab">POUNCE</span>
-      <span class="desc">Dashes claws-first, knocking out roommates and smashing thrown junk.</span>
-    </button>
-    <button class="pick" data-cat="gremlin">
-      <canvas aria-hidden="true"></canvas>
-      <strong>Gremlin</strong>
-      <span class="ab">GROWL</span>
-      <span class="desc">Stuns nearby roommates and swats away projectiles. Hold jump to float on her fluff.</span>
-    </button>
-  </div>
-  <p id="rotateHint">Turn your phone sideways for a bigger view.</p>
-  <p class="keys">← → / A D to move · Space / W / ↑ to jump · X / Shift for ability · P to pause · Controllers work too</p>
-  <div class="go" id="ovBtn">Play</div>
+      <div class="opt"><span>Vibration</span><button class="toggle" id="optVibrate" aria-pressed="true">On</button></div>
+      <div class="opt">
+        <span>Touch buttons</span>
+        <span class="seg" id="optTouch">
+          <button data-v="auto" aria-pressed="true">Auto</button><button data-v="on" aria-pressed="false">Always</button><button data-v="off" aria-pressed="false">Off</button>
+        </span>
+      </div>
+    </div>
+    <p class="note">Auto shows the on-screen buttons on phones and hides them when you use a keyboard or controller.</p>
+    <div class="actions"><button class="btn primary" data-back>Done</button></div>
+  </section>
+
+  <!-- Characters -->
+  <section class="screen" data-screen="info">
+    <h2>Characters</h2>
+    <div class="info-card">
+      <button class="arrow" id="infoPrev" aria-label="Previous character">◀</button>
+      <div class="info-body">
+        <canvas id="infoPortrait" aria-hidden="true"></canvas>
+        <div class="info-text">
+          <div class="info-head"><strong id="infoName"></strong><span id="infoRole" class="role"></span><span id="infoCount" class="count"></span></div>
+          <p id="infoBio"></p>
+          <p id="infoGame"></p>
+          <p id="infoTip" class="tip"></p>
+        </div>
+      </div>
+      <button class="arrow" id="infoNext" aria-label="Next character">▶</button>
+    </div>
+    <div id="infoDots" class="dots"></div>
+    <div class="actions"><button class="btn primary" data-back data-autofocus>Back</button></div>
+  </section>
+
+  <!-- Hall of Fame -->
+  <section class="screen" data-screen="fame">
+    <h2>Hall of Fame</h2>
+    <p id="fameStatus" class="note"></p>
+    <ol id="fameList" class="scores"></ol>
+    <div class="actions"><button class="btn primary" data-back data-autofocus>Back</button></div>
+  </section>
+
+  <!-- Paused -->
+  <section class="screen" data-screen="pause">
+    <h2>Paused</h2>
+    <nav class="menu">
+      <button class="btn primary" id="resumeBtn" data-autofocus>Resume</button>
+      <button class="btn" data-go="options">Options</button>
+      <button class="btn" id="pauseQuit">Main menu</button>
+    </nav>
+  </section>
+
+  <!-- Game over / win -->
+  <section class="screen" data-screen="end">
+    <h2 id="endTitle">Game Over</h2>
+    <p id="endText"></p>
+    <div id="scorebox" hidden>
+      <form id="scoreForm" autocomplete="off">
+        <label for="playerName">Save your score</label>
+        <div class="row">
+          <input id="playerName" maxlength="16" placeholder="Your name" enterkeyhint="done" spellcheck="false">
+          <button id="saveScore" type="submit">Save</button>
+        </div>
+      </form>
+      <p id="scoreStatus" role="status"></p>
+      <h3>Top 10</h3>
+      <ol id="leaderboard" class="scores"></ol>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="againBtn" data-autofocus>Play again</button>
+      <button class="btn" data-go="select">Change cat</button>
+      <button class="btn" id="endQuit">Main menu</button>
+    </div>
+  </section>
 </div>
 
 <script src="js/errors.js"></script>
+<script src="js/settings.js"></script>
 <script src="js/config.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/canvas2d-renderer.js"></script>
@@ -74,6 +163,8 @@
 <script src="js/roommates.js"></script>
 <script src="js/mobile.js"></script>
 <script src="js/scores.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/menu.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

@@ -36,14 +36,14 @@ const Scoreboard = (() => {
 
   const fmtTime = (ms) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
-  function render(scores) {
+  function render(scores, target = list) {
     if (!scores.length) {
       const li = document.createElement('li');
       li.className = 'empty'; li.textContent = 'No scores yet. Be the first!';
-      list.replaceChildren(li);
+      target.replaceChildren(li);
       return;
     }
-    list.replaceChildren(...scores.map((s, i) => {
+    target.replaceChildren(...scores.map((s, i) => {
       const li = document.createElement('li');
       if (s.id === savedId) li.classList.add('me');
       const cell = (cls, text) => { const span = document.createElement('span'); span.className = cls; span.textContent = text; return span; };
@@ -71,6 +71,24 @@ const Scoreboard = (() => {
     box.hidden = false; form.hidden = false; saveBtn.disabled = false;
     status.textContent = '';
     refresh();
+  }
+
+  // Hall of Fame screen: fill a list with the top scores
+  async function loadInto(target, statusEl, limit = 20) {
+    statusEl.textContent = 'Loading…';
+    target.replaceChildren();
+    await ready;
+    if (!available) {
+      statusEl.textContent = 'The Hall of Fame needs the score server. Start the game with docker compose (or npm run dev in server/) to save and see scores.';
+      return;
+    }
+    try {
+      const { scores } = await api(`api/scores?limit=${limit}`);
+      statusEl.textContent = scores.length ? `Top ${Math.min(limit, scores.length)} of all time` : '';
+      render(scores, target);
+    } catch (err) {
+      statusEl.textContent = `Couldn't load scores: ${err.message}`;
+    }
   }
 
   function hide() {
@@ -102,5 +120,5 @@ const Scoreboard = (() => {
     }
   });
 
-  return { show, hide };
+  return { show, hide, loadInto };
 })();

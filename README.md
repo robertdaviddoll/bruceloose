@@ -43,6 +43,15 @@ npm run dev        # serves the game + API at http://localhost:GAME_PORT (from .
 
 Or just open `public/index.html` in a browser to play without saving scores.
 
+## Menus
+
+- **Play:** pick Bruce or Gremlin, then Start.
+- **Options:** sound on/off, volume, vibration on/off, and touch buttons (Auto / Always / Off). Saved in the browser.
+- **Characters:** bios, what each character does in the game, and a tip for beating them. Text lives in `public/js/characters.js`.
+- **Hall of Fame:** top 20 saved scores (needs the score server).
+
+Menus work with touch/mouse, keyboard (arrows, Enter/Space, Esc to go back) and controllers (d-pad, A to choose, B to go back). On the cat picker, Enter or A on a cat starts the game with that cat.
+
 ## Phones and controllers
 
 - **Touch:** on-screen ◀ ▶, JUMP and ability buttons appear automatically on phones and tablets.
@@ -80,7 +89,7 @@ docker compose down -v                                       # wipe all scores (
 ## Layout
 
 - `public/`: everything the browser loads. Put new sprites, sounds, etc. here.
-  - `index.html`, `css/`, `js/` (`js/game.js` main loop, `js/cats.js`, `js/roommates.js`, `js/scores.js`, `js/mobile.js`)
+  - `index.html`, `css/`, `js/` (`js/game.js` main loop, `js/cats.js`, `js/roommates.js`, `js/scores.js`, `js/mobile.js`, `js/menu.js`, `js/settings.js`, `js/characters.js`)
   - `manifest.webmanifest`, `icons/`: home-screen app name and icons
 - `server/`: score API
 - `Dockerfile`, `nginx.conf`: the web container, which serves `public/`

@@ -10,6 +10,7 @@ const Haptics = (() => {
   return {
     setPad(p) { pad = p; },
     buzz(kind) {
+      if (!Settings.get('vibration')) return;
       try { if (PATTERNS[kind] && navigator.vibrate) navigator.vibrate(PATTERNS[kind]); } catch { /* not allowed */ }
       try {
         const r = RUMBLE[kind], act = pad && pad.vibrationActuator;
@@ -38,6 +39,11 @@ const Gamepads = (() => {
       if (b(0) || b(12)) acts.add('jump');
       if (b(1) || b(2) || b(5) || b(7)) acts.add('special');
       if (b(9)) acts.add('start');
+      // menu navigation
+      if (b(12) || (gp.axes[1] || 0) < -DEADZONE) acts.add('up');
+      if (b(13) || (gp.axes[1] || 0) > DEADZONE) acts.add('down');
+      if (b(0)) acts.add('confirm');
+      if (b(1)) acts.add('back');
     }
     if (pads.length) Haptics.setPad(pads[0]);
     const pressed = new Set([...acts].filter((a) => !held.has(a)));

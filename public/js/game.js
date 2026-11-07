@@ -231,28 +231,40 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
   }
 
-  // Draw each cat into its little portrait on the character select cards.
-  document.querySelectorAll('.pick canvas').forEach((cv) => {
-    const type = cv.closest('.pick').dataset.cat;
+  // Portraits: draw a cat or a person into a small canvas (cat picker + Characters screen).
+  // Uses the 2D canvas renderer so it works with or without WebGL.
+  function drawPortrait(cv, kind, type, cssW, cssH) {
     const r = new Canvas2DRenderer();
     r.domElement = cv; r.ctx = cv.getContext('2d');
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); r.setSize(132, 92);
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); r.setSize(cssW, cssH);
     const sc = new THREE.Scene(); sc.background = new THREE.Color(0x8fd3ff);
-    const cam = new THREE.OrthographicCamera(-0.95, 1.05, 1.32, -0.08, 0.1, 100); cam.position.z = 50;
-    box(-2, -1, 4, 1, 0x56c24f, -1, sc);
+    const aspect = cssW / cssH;
+    // world-space window to frame each kind of character
+    const frame = kind === 'cat' ? { cx: 0.05, bottom: -0.08, h: 1.4 }
+                : type === 'val' ? { cx: 0, bottom: -0.1, h: 1.55 }
+                : { cx: 0, bottom: -0.08, h: 1.95 };
+    const w = frame.h * aspect;
+    const cam = new THREE.OrthographicCamera(frame.cx - w / 2, frame.cx + w / 2, frame.bottom + frame.h, frame.bottom, 0.1, 100);
+    cam.position.z = 50;
+    box(-5, -1, 10, 1, 0x56c24f, -1, sc);
     const g = new THREE.Group(); sc.add(g);
-    animateCat(buildCat(type, g, { box, circle, tri, THREE }), { anim: 0, onGround: true, dash: 0, growl: 0 }, 0.4, false);
+    if (kind === 'cat') {
+      animateCat(buildCat(type, g, { box, circle, tri, THREE }), { anim: 0, onGround: true, dash: 0, growl: 0 }, 0.4, false);
+    } else {
+      buildRoommate(type, g, { box, circle, tri, THREE });
+    }
     r.render(sc, cam);
-    cv.style.width = cv.style.height = '';   // let the stylesheet size it (smaller on phones)
-  });
+    cv.style.width = cv.style.height = '';   // let the stylesheet size it
+  }
+  document.querySelectorAll('.pick canvas').forEach((cv) => drawPortrait(cv, 'cat', cv.closest('.pick').dataset.cat, 132, 92));
+  Menu.drawPortrait = (cv, info) => drawPortrait(cv, info.kind, info.id, 240, 180);
 
   // ---------- Game state ----------
   const ui = {
     coins: document.getElementById('hudCoins'), score: document.getElementById('hudScore'), lives: document.getElementById('hudLives'),
-    overlay: document.getElementById('overlay'), title: document.getElementById('ovTitle'), text: document.getElementById('ovText'), btn: document.getElementById('ovBtn'),
     ability: document.getElementById('hudAbility'), special: document.getElementById('tSpecial'),
   };
-  let state = 'title';   // title | play | paused | over | won
+  let state = 'menu';   // menu | play | paused | over | won
   let score = 0, lives = 3, coinCount = 0, checkpoint = checkpoints[0];
   let camX = 0, camY = 4;
 
@@ -281,37 +293,63 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     player.inv = 0;
     updateHud();
   }
-  // the character picker shows on the title, game-over and win screens (not on pause)
-  function showOverlay(title, text, btn, pickCat = true) {
-    ui.title.textContent = title; ui.text.textContent = text; ui.btn.textContent = btn;
-    ui.overlay.classList.toggle('picking', pickCat);
-    ui.overlay.classList.remove('hidden');
-  }
-  ui.overlay.classList.add('picking');
-  document.querySelectorAll('.pick').forEach(b => b.addEventListener('click', (e) => {
-    e.stopPropagation(); setCharacter(b.dataset.cat); sfx('cp');
-  }));
-  function startOrResume() {
+  // ---------- Screens (see js/menu.js) ----------
+  function startGame() {
     initAudio();
-    if (state === 'title' || state === 'over' || state === 'won') resetGame();
-    state = 'play'; ui.overlay.classList.add('hidden');
+    resetGame();
+    state = 'play'; Menu.hide();
     Scoreboard.hide();
+    ScreenAwake.on();
+  }
+  function resume() {
+    if (state !== 'paused') return;
+    initAudio();
+    state = 'play'; Menu.hide();
     ScreenAwake.on();
   }
   function pause() {
     if (state !== 'play') return;
-    state = 'paused'; showOverlay('Paused', 'Take a breather.', 'Resume', false);
+    state = 'paused'; Menu.reset('pause');
     ScreenAwake.off();
   }
+  function toMainMenu() {
+    state = 'menu'; resetGame();
+    Scoreboard.hide(); ScreenAwake.off();
+    Menu.reset('main');
+  }
+  function endGame(result) {
+    state = result === 'won' ? 'won' : 'over';
+    ScreenAwake.off();
+    document.getElementById('endTitle').textContent = result === 'won' ? 'You made it!' : 'Game Over';
+    document.getElementById('endText').textContent =
+      `${CATS[character].name} · Score ${score} · Coins ${coinCount}/${coins.length}` + (result === 'won' && coinCount === coins.length ? ' · Perfect!' : '');
+    Menu.reset('end');
+    Scoreboard.show(runResult(result));
+  }
+
+  document.querySelectorAll('.pick').forEach(b => {
+    b.addEventListener('click', () => { setCharacter(b.dataset.cat); sfx('cp'); });              // tap/click: just pick
+    b.addEventListener('keydown', (e) => {                                                        // Enter/Space: pick and start
+      if (e.code !== 'Enter' && e.code !== 'Space') return;
+      e.preventDefault(); e.stopPropagation(); setCharacter(b.dataset.cat); startGame();
+    });
+  });
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('againBtn').addEventListener('click', startGame);
+  document.getElementById('resumeBtn').addEventListener('click', resume);
+  document.getElementById('pauseQuit').addEventListener('click', toMainMenu);
+  document.getElementById('endQuit').addEventListener('click', toMainMenu);
+  Menu.onRootBack('pause', resume);                       // Back / Esc on the pause screen resumes
+  Menu.onSide('select', (d) => {                          // left/right on the cat picker switches cats
+    setCharacter(d < 0 ? 'bruce' : 'gremlin'); sfx('cp');
+    document.querySelector(`.pick[data-cat="${character}"]`).focus();
+    return true;
+  });
+  Menu.onEnter('select', () => setCharacter(character));
   function hurt() {
     if (player.inv > 0) return;
     lives--; sfx('hurt'); Haptics.buzz('hurt'); updateHud();
-    if (lives <= 0) {
-      ScreenAwake.off();
-      state = 'over'; showOverlay('Game Over', `Score ${score} · Coins ${coinCount}/${coins.length}`, 'Try again');
-      Scoreboard.show(runResult('died'));
-      return;
-    }
+    if (lives <= 0) { endGame('died'); return; }
     spawn(checkpoint); player.inv = 1.5;
     clearProjectiles();
   }
@@ -332,13 +370,21 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     if (input.special && !wasSpecial) input.specialPressed = true;
     document.querySelectorAll('.tbtn').forEach(b => b.classList.toggle('on', acts.has(b.dataset.act)));
   }
+  const MENU_KEYS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left',
+                      ArrowRight: 'right', KeyD: 'right', Escape: 'back', Backspace: 'back' };
   addEventListener('keydown', (e) => {
+    if (state !== 'play') {
+      // menus: arrows move between buttons, Enter/Space press the focused button (browser default), Esc goes back
+      if (e.code === 'KeyP' && state === 'paused') { resume(); return; }
+      const action = MENU_KEYS[e.code];
+      if (e.target.type === 'range' && (action === 'left' || action === 'right')) return;   // let the slider move itself
+      if (action) { e.preventDefault(); Menu.nav(action); return; }
+      if ((e.code === 'Enter' || e.code === 'Space') && !Menu.visible) return;
+      if ((e.code === 'Enter' || e.code === 'Space') && !(e.target instanceof HTMLButtonElement)) { e.preventDefault(); Menu.nav('confirm'); }
+      return;
+    }
     if (KEYMAP[e.code]) e.preventDefault();
-    const picking = state === 'title' || state === 'over' || state === 'won';
-    if (picking && (e.code === 'ArrowLeft' || e.code === 'KeyA')) { setCharacter('bruce'); return; }
-    if (picking && (e.code === 'ArrowRight' || e.code === 'KeyD')) { setCharacter('gremlin'); return; }
-    if ((e.code === 'Enter' || e.code === 'Space') && state !== 'play') { startOrResume(); return; }
-    if (e.code === 'KeyP' || e.code === 'Escape') { state === 'play' ? pause() : state === 'paused' && startOrResume(); return; }
+    if (e.code === 'KeyP' || e.code === 'Escape') { pause(); return; }
     if (KEYMAP[e.code]) { keys.add(e.code); recomputeInput(); }
   });
   addEventListener('keyup', (e) => { keys.delete(e.code); recomputeInput(); });
@@ -360,13 +406,18 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   addEventListener('pointerup', endPointer);
   addEventListener('pointercancel', endPointer);
 
-  // Show touch controls on touch devices (and switch back if a key is pressed)
-  const enableTouch = () => document.body.classList.add('touch');
-  if (matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window) enableTouch();
-  addEventListener('touchstart', enableTouch, { passive: true });
-  addEventListener('keydown', () => document.body.classList.remove('touch'));
-
-  ui.overlay.addEventListener('click', startOrResume);
+  // On-screen touch buttons. Options > Touch buttons: Auto (touch devices, hidden while using
+  // a keyboard or controller), Always, or Off.
+  let lastInput = (matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window) ? 'touch' : 'keys';
+  function applyTouchMode() {
+    const mode = Settings.get('touch');
+    document.body.classList.toggle('touch', mode === 'on' || (mode === 'auto' && lastInput === 'touch'));
+  }
+  const usedInput = (kind) => { if (lastInput !== kind) { lastInput = kind; applyTouchMode(); } };
+  addEventListener('touchstart', () => usedInput('touch'), { passive: true });
+  addEventListener('keydown', (e) => { if (!(e.target instanceof HTMLInputElement)) usedInput('keys'); });
+  Settings.onChange((k) => { if (k === 'touch') applyTouchMode(); });
+  applyTouchMode();
 
   // fullscreen button (phones/tablets that support it)
   const fsBtn = document.getElementById('fsBtn');
@@ -378,19 +429,21 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   // game controller: poll once per frame
   function pollGamepad() {
     const pad = Gamepads.read();
-    if (pad.connectedNow) { document.body.classList.remove('touch'); toast('Controller connected'); }
+    if (pad.connectedNow) { usedInput('pad'); toast('Controller connected'); }
     if (!pad.changed) return;
+    if (pad.pressed.size) usedInput('pad');
     const inMenu = state !== 'play';
     if (inMenu) {
-      const picking = state === 'title' || state === 'over' || state === 'won';
-      if (picking && pad.pressed.has('left')) setCharacter('bruce');
-      if (picking && pad.pressed.has('right')) setCharacter('gremlin');
-      if (pad.pressed.has('jump') || pad.pressed.has('start')) startOrResume();
+      if (pad.pressed.has('start') && state === 'paused') resume();
+      else {
+        for (const a of ['up', 'down', 'left', 'right', 'confirm', 'back']) if (pad.pressed.has(a)) Menu.nav(a);
+        if (pad.pressed.has('start')) Menu.nav('confirm');
+      }
     } else if (pad.pressed.has('start')) pause();
     recomputeInput();
     if (inMenu) { input.jumpPressed = false; input.specialPressed = false; }   // the button that started the game shouldn't also jump
   }
-  document.getElementById('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); state === 'play' ? pause() : state === 'paused' && startOrResume(); });
+  document.getElementById('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); state === 'play' ? pause() : resume(); });
   document.addEventListener('contextmenu', e => e.preventDefault());
 
   // ---------- Abilities ----------
@@ -563,9 +616,8 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     // goal
     if (p.x + p.w > goalX) {
       score += lives * 500 + (coinCount === coins.length ? 2000 : 0);
-      updateHud(); sfx('win'); Haptics.buzz('win'); ScreenAwake.off(); state = 'won';
-      showOverlay('You made it!', `Score ${score} · Coins ${coinCount}/${coins.length}${coinCount === coins.length ? ' · Perfect!' : ''}`, 'Play again');
-      Scoreboard.show(runResult('won'));
+      updateHud(); sfx('win'); Haptics.buzz('win');
+      endGame('won');
     }
 
     p.anim += dt * (p.onGround ? Math.abs(p.vx) * 2.2 : 0);
@@ -655,6 +707,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
     requestAnimationFrame(frame);
   }
   resetGame();
+  Menu.reset('main');   // open the main menu with Play focused
   requestAnimationFrame(frame);
 
   // expose for debugging in the console
