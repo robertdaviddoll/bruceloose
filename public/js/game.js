@@ -280,7 +280,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   }
   let runTime = 0;   // seconds played this run (saved with the score)
   const runResult = (result) => ({ score, coins: coinCount, totalCoins: coins.length, character, result,
-                                   timeMs: Math.round(runTime * 1000), device: Device.type,
+                                   timeMs: Math.round(runTime * 1000), device: Device.type, version: GAME_CONFIG.version,
                                    // checkpoints passed (the starting spot doesn't count)
                                    checkpoints: checkpoints.filter((c, i) => i > 0 && c.reached).length,
                                    totalCheckpoints: checkpoints.length - 1 });

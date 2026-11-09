@@ -293,3 +293,6 @@ body:has(#overlay:not(.hidden)) #pauseBtn { visibility: hidden; }
   #allStatus { font-size: 12px; }
   [data-screen="scores"] .actions .btn { padding: 6px 18px; }
 }
+
+/* version number on the main menu */
+#overlay .version { font-size: 12px; opacity: .6; margin: 0; font-variant-numeric: tabular-nums; }

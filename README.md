@@ -1,5 +1,7 @@
 # Bruce Loose
 
+Current version: see `public/config.js` (shown on the main menu and saved with every score).
+
 A three.js side-scroller starring Bruce and Gremlin, with the roommates as enemies.
 
 ## Settings
@@ -76,7 +78,7 @@ Menus work with touch/mouse, keyboard (arrows, Enter/Space, Esc to go back) and 
 | GET | `/api/health` | `{ "ok": true }` |
 | GET | `/api/scores?limit=25&device=phone&character=bruce&player=ste&after=…` | Scores, best first (max 50 per page). Optional `device` (`phone`/`tablet`/`desktop`), `character` (`bruce`/`gremlin`) and `player` (name contains, any case) filters. Returns `{ scores, next, total }`; pass `next` back as `after` for the next page (`total` only on the first page). |
 | GET | `/api/players` | Player names, for search suggestions |
-| POST | `/api/scores` | Save `{ name, score, coins, totalCoins, character, result, timeMs, device, checkpoints, totalCheckpoints }`, returns `{ id, rank, total }` |
+| POST | `/api/scores` | Save `{ name, score, coins, totalCoins, character, result, timeMs, device, checkpoints, totalCheckpoints }`, returns `{ id, rank, total }`. Also accepts `version` (e.g. `0.0.14`) |
 
 `device` is `phone`, `tablet` or `desktop`, and `checkpoints` / `totalCheckpoints` count checkpoints passed (all optional; shown as icons on the score lists). Names are 1-16 characters. Saves are limited per IP (`SAVES_PER_MINUTE`, default 6 per minute).
 
@@ -91,6 +93,7 @@ docker compose down -v                                       # wipe all scores (
 
 - `public/`: everything the browser loads. Put new sprites, sounds, etc. here.
   - `index.html`, `css/`, `js/` (`js/game.js` main loop, `js/cats.js`, `js/roommates.js`, `js/scores.js`, `js/mobile.js`, `js/menu.js`, `js/settings.js`, `js/characters.js`)
+  - `config.js`: main game config (name, version). Bump `version` for each release.
   - `manifest.webmanifest`, `icons/`: home-screen app name and icons
 - `server/`: score API
 - `Dockerfile`, `nginx.conf`: the web container, which serves `public/`

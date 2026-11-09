@@ -46,11 +46,12 @@ const addColumn = (name, type) => {
 addColumn('device', 'TEXT');                    // phone / tablet / desktop
 addColumn('checkpoints', 'INTEGER');            // checkpoints passed this run
 addColumn('total_checkpoints', 'INTEGER');      // checkpoints in the level
+addColumn('version', 'TEXT');                   // game version the run was played on (public/config.js)
 const insertScore = db.prepare(`
-  INSERT INTO scores (name, score, coins, total_coins, character, result, time_ms, device, checkpoints, total_checkpoints)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  INSERT INTO scores (name, score, coins, total_coins, character, result, time_ms, device, checkpoints, total_checkpoints, version)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 const SCORE_COLUMNS = `id, name, score, coins, total_coins AS totalCoins, character, result,
-  time_ms AS timeMs, device, checkpoints, total_checkpoints AS totalCheckpoints, created_at AS createdAt`;
+  time_ms AS timeMs, device, checkpoints, total_checkpoints AS totalCheckpoints, version, created_at AS createdAt`;
 const players = db.prepare(`
   SELECT name FROM scores GROUP BY name COLLATE NOCASE ORDER BY MAX(score) DESC LIMIT 200`);
 
@@ -95,13 +96,15 @@ function validate(body) {
   if (!CHARACTERS.has(body.character)) return 'character must be "bruce" or "gremlin".';
   if (!RESULTS.has(body.result)) return 'result must be "won" or "died".';
   if (body.device !== undefined && !DEVICES.has(body.device)) return 'device must be "phone", "tablet" or "desktop".';
+  if (body.version !== undefined && !(typeof body.version === 'string' && /^\d{1,4}\.\d{1,4}\.\d{1,4}$/.test(body.version))) return 'version must look like 1.2.3.';
   const hasCp = body.checkpoints !== undefined || body.totalCheckpoints !== undefined;
   if (hasCp && !isInt(body.totalCheckpoints, 0, 100)) return 'totalCheckpoints is out of range.';
   if (hasCp && !isInt(body.checkpoints, 0, body.totalCheckpoints)) return 'checkpoints must be between 0 and totalCheckpoints.';
   if (!isInt(body.timeMs, 0, 24 * 3600 * 1000)) return 'timeMs is out of range.';
   return { name, score: body.score, coins: body.coins, totalCoins: body.totalCoins,
            character: body.character, result: body.result, timeMs: body.timeMs, device: body.device || null,
-           checkpoints: hasCp ? body.checkpoints : null, totalCheckpoints: hasCp ? body.totalCheckpoints : null };
+           checkpoints: hasCp ? body.checkpoints : null, totalCheckpoints: hasCp ? body.totalCheckpoints : null,
+           version: body.version || null };
 }
 
 // ---------- tiny per-IP rate limit for saves ----------
@@ -193,7 +196,7 @@ const server = http.createServer(async (req, res) => {
       if (typeof v === 'string') return send(res, 400, { error: v });
       if (!allowSave(clientIp(req))) return send(res, 429, { error: 'Too many saves. Try again in a minute.' });
       const { lastInsertRowid } = insertScore.run(v.name, v.score, v.coins, v.totalCoins, v.character, v.result, v.timeMs, v.device,
-                                                  v.checkpoints, v.totalCheckpoints);
+                                                  v.checkpoints, v.totalCheckpoints, v.version);
       const id = Number(lastInsertRowid);
       const { ahead } = rankOf.get(v.score, v.score, v.timeMs, v.score, v.timeMs, id);
       const { n: total } = db.prepare('SELECT COUNT(*) AS n FROM scores').get();

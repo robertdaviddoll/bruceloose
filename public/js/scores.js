@@ -71,7 +71,7 @@ const Scoreboard = (() => {
       li.append(
         cell('rank', rank),
         (() => { const n = cell('name', ''); n.append(deviceIcon(s.device), cell('who', s.name)); return n; })(),
-        cell('meta', `${CAT_NAMES[s.character] || s.character} · ${s.result === 'won' ? 'won' : 'died'} · ${fmtTime(s.timeMs)}`),
+        cell('meta', `${CAT_NAMES[s.character] || s.character} · ${s.result === 'won' ? 'won' : 'died'} · ${fmtTime(s.timeMs)}${s.version ? ` · v${s.version}` : ''}`),
         (() => {
           const sc = cell('score', '');
           if (Number.isInteger(s.checkpoints)) {         // older scores don't have this

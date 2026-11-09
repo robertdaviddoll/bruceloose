@@ -152,6 +152,9 @@ const Menu = (() => {
   // ---------- Hall of Fame ----------
   onEnterHooks.fame = () => Scoreboard.loadInto(document.getElementById('fameList'), document.getElementById('fameStatus'), 20);
 
+  // version from public/config.js on the main menu
+  document.getElementById('gameVersion').textContent = `v${GAME_CONFIG.version}`;
+
   const api = {
     show, reset, back, hide, nav,
     get current() { return current; },
