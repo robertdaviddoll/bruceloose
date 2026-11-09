@@ -2,6 +2,16 @@
 
 Current version: see `public/config.js` (shown on the main menu and saved with every score).
 
+## Versioning
+
+Versions are `MAJOR.MINOR.PATCH`, set in `public/config.js`:
+
+- **PATCH** (third number): bump for any code change that doesn't affect gameplay or scoring, such as menus, the server, visuals or bug fixes. Example: 0.0.14 → 0.0.15.
+- **MINOR** (second number): bump for any change to how the game plays or how score is counted, such as level layout, physics, abilities, enemies, points or lives. Reset PATCH to 0. Example: 0.0.15 → 0.1.0.
+- **MAJOR** (first number): not used yet.
+
+Because every score is saved with its version, scores from different minor versions were played under different rules.
+
 A three.js side-scroller starring Bruce and Gremlin, with the roommates as enemies.
 
 ## Settings
