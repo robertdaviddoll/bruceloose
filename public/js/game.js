@@ -458,6 +458,11 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   document.addEventListener('contextmenu', e => e.preventDefault());
 
   // ---------- Abilities ----------
+  // Swatting something a roommate threw (Bruce's pounce or Gremlin's growl):
+  // +10, but only the first time for each thrower.
+  function swatBonus(pr) {
+    if (pr.owner && !pr.owner.smashPaid) { pr.owner.smashPaid = true; score += 10; updateHud(); }
+  }
   function knockOut(e) {
     e.alive = false; e.squash = 0.35; e.stun = 0; e.dizzy.visible = false;
     e.body.scale.set(1.25, 0.3, 1); e.body.rotation.z = 0;
@@ -481,6 +486,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
         if (e.type === 'steven' && e.state !== 'lurk') e.state = 'return';
       }
       for (let i = projectiles.length - 1; i >= 0; i--) if (near(projectiles[i])) {
+        swatBonus(projectiles[i]);
         world.remove(projectiles[i].mesh); projectiles.splice(i, 1);
       }
       sfx('growl');
@@ -609,7 +615,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
       if (overlap(p, pr)) {
         if (p.dash > 0) {                                  // smashed by Bruce's pounce
           world.remove(pr.mesh); projectiles.splice(i, 1);
-          if (pr.owner && !pr.owner.smashPaid) { pr.owner.smashPaid = true; score += 10; updateHud(); }   // +10 once per thrower
+          swatBonus(pr);
           continue;
         }
         if (p.inv <= 0) { hurt(); return; }
