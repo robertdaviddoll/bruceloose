@@ -54,6 +54,35 @@ const Scoreboard = (() => {
     ? api('api/health').then(() => { available = true; }).catch(() => {})
     : Promise.resolve();
 
+  // "how long ago" labels. The server stores UTC times like "2026-11-09 09:30:12".
+  const parseUtc = (t) => (t ? new Date(`${t.replace(' ', 'T')}Z`) : null);
+  function ago(date) {
+    const s = Math.max(1, Math.floor((Date.now() - date.getTime()) / 1000));
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);   if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);   if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);   if (d < 7) return `${d}d ago`;
+    if (d < 30) return `${Math.floor(d / 7)}w ago`;
+    if (d < 365) return `${Math.max(1, Math.min(11, Math.floor(d / 30.44)))}mo ago`;
+    return `${Math.floor(d / 365)}y ago`;
+  }
+  function agoSpan(createdAt) {
+    const date = parseUtc(createdAt);
+    const span = document.createElement('time');
+    span.className = 'ago';
+    if (!date || isNaN(date)) return span;
+    span.dateTime = date.toISOString();
+    span.title = date.toLocaleString();
+    span.textContent = ` · ${ago(date)}`;
+    return span;
+  }
+  // keep the labels fresh while a list is on screen
+  setInterval(() => {
+    document.querySelectorAll('.scores time.ago[datetime]').forEach((t) => {
+      if (t.offsetParent !== null) t.textContent = ` · ${ago(new Date(t.dateTime))}`;
+    });
+  }, 15000);
+
   const fmtTime = (ms) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
   function render(scores, target = list) {
@@ -74,7 +103,11 @@ const Scoreboard = (() => {
       li.append(
         cell('rank', rank),
         (() => { const n = cell('name', ''); n.append(deviceIcon(s.device), cell('who', s.name)); return n; })(),
-        cell('meta', `${CAT_NAMES[s.character] || s.character} · ${s.result === 'won' ? 'won' : 'died'} · ${fmtTime(s.timeMs)}${s.version ? ` · v${s.version}` : ''}`),
+        (() => {
+          const m = cell('meta', `${CAT_NAMES[s.character] || s.character} · ${s.result === 'won' ? 'won' : 'died'} · ${fmtTime(s.timeMs)}${s.version ? ` · v${s.version}` : ''}`);
+          m.append(agoSpan(s.createdAt));
+          return m;
+        })(),
         (() => {
           const sc = cell('score', '');
           if (Number.isInteger(s.checkpoints)) {         // older scores don't have this

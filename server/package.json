@@ -1,6 +1,6 @@
 {
   "name": "bruce-loose-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Score API for Bruce Loose (SQLite, no dependencies)",
