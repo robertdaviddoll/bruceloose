@@ -141,13 +141,13 @@ const Scoreboard = (() => {
     try { localStorage.setItem(NAME_KEY, name); } catch { /* storage blocked */ }
     saveBtn.disabled = true; status.textContent = 'Saving…';
     try {
-      const { id, rank } = await api('api/scores', {
+      const { id, rank, total } = await api('api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, ...pending }),
       });
       savedId = id; pending = null; form.hidden = true;
-      status.textContent = `Saved! You're #${rank} on the leaderboard.`;
+      status.textContent = total ? `Saved! You're #${rank} of ${total} on the leaderboard.` : `Saved! You're #${rank} on the leaderboard.`;
       refresh();
     } catch (err) {
       status.textContent = err.message;

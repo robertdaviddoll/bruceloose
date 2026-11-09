@@ -5,7 +5,7 @@
 //   GET  /api/scores?limit=25&device=phone&character=bruce&player=ste&after=CURSOR
 //                                 -> { scores, next, total } best first; pass `next` back as `after` for the next page
 //   GET  /api/players             -> { players: [names] } for search suggestions
-//   POST /api/scores              -> save a score, returns { id, rank }
+//   POST /api/scores              -> save a score, returns { id, rank, total }
 //
 // Set STATIC_DIR (the public/ folder) to also serve the game files, handy for running without Docker.
 
@@ -196,7 +196,8 @@ const server = http.createServer(async (req, res) => {
                                                   v.checkpoints, v.totalCheckpoints);
       const id = Number(lastInsertRowid);
       const { ahead } = rankOf.get(v.score, v.score, v.timeMs, v.score, v.timeMs, id);
-      return send(res, 201, { id, rank: ahead + 1 });
+      const { n: total } = db.prepare('SELECT COUNT(*) AS n FROM scores').get();
+      return send(res, 201, { id, rank: ahead + 1, total });
     }
 
     if (url.pathname.startsWith('/api/')) return send(res, 404, { error: 'Not found.' });
