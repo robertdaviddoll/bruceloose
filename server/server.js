@@ -2,7 +2,7 @@
 // Zero dependencies: Node's built-in http + node:sqlite (Node 22.13+).
 //
 //   GET  /api/health              -> { ok: true }
-//   GET  /api/scores?limit=25&device=phone&player=ste&after=CURSOR
+//   GET  /api/scores?limit=25&device=phone&character=bruce&player=ste&after=CURSOR
 //                                 -> { scores, next, total } best first; pass `next` back as `after` for the next page
 //   GET  /api/players             -> { players: [names] } for search suggestions
 //   POST /api/scores              -> save a score, returns { id, rank }
@@ -56,9 +56,10 @@ const players = db.prepare(`
 
 // One page of scores, best first. Filters are optional. Paging uses a cursor (the last row's
 // score/time/id) instead of an offset, so new saves while someone scrolls don't shift the pages.
-function queryScores({ limit, device, player, after }) {
+function queryScores({ limit, device, character, player, after }) {
   const where = [], params = [];
   if (device) { where.push('device = ?'); params.push(device); }
+  if (character) { where.push('character = ?'); params.push(character); }
   if (player) { where.push(`name LIKE ? ESCAPE '\\'`); params.push(`%${player.replace(/[\\%_]/g, (m) => '\\' + m)}%`); }
   const filters = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const total = after ? undefined : db.prepare(`SELECT COUNT(*) AS n FROM scores ${filters}`).get(...params).n;
@@ -170,6 +171,8 @@ const server = http.createServer(async (req, res) => {
       const limit = Math.min(50, Math.max(1, parseInt(q.get('limit'), 10) || 10));
       const device = q.get('device') || '';
       if (device && !DEVICES.has(device)) return send(res, 400, { error: 'device must be "phone", "tablet" or "desktop".' });
+      const character = q.get('character') || '';
+      if (character && !CHARACTERS.has(character)) return send(res, 400, { error: 'character must be "bruce" or "gremlin".' });
       const player = (q.get('player') || '').trim();
       if (player.length > 16) return send(res, 400, { error: 'player search can be at most 16 characters.' });
       let after = null;
@@ -178,7 +181,7 @@ const server = http.createServer(async (req, res) => {
         if (!m) return send(res, 400, { error: 'after must be the "next" value from a previous page.' });
         after = { score: Number(m[1]), timeMs: Number(m[2]), id: Number(m[3]) };
       }
-      return send(res, 200, queryScores({ limit, device, player, after }));
+      return send(res, 200, queryScores({ limit, device, character, player, after }));
     }
 
     if (url.pathname === '/api/players' && req.method === 'GET') {

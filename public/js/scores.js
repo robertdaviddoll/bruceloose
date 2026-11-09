@@ -158,11 +158,11 @@ const Scoreboard = (() => {
   // ---------- "See more": every score, filter by device / player, loads more as you scroll ----------
   const all = {
     list: document.getElementById('allList'), status: document.getElementById('allStatus'),
-    filters: document.getElementById('allFilters'), devices: document.getElementById('allDevice'),
+    filters: document.getElementById('allFilters'), devices: document.getElementById('allDevice'), cats: document.getElementById('allCat'),
     search: document.getElementById('allPlayer'), names: document.getElementById('allPlayers'),
   };
   const PAGE = 25;
-  const query = { device: '', player: '' };
+  const query = { device: '', character: '', player: '' };
   let next = null, done = false, loading = false, shown = 0, generation = 0, totalText = '';
   const sentinel = document.createElement('li');                 // when this scrolls into view, load more
   sentinel.className = 'sentinel'; sentinel.setAttribute('aria-hidden', 'true');
@@ -186,6 +186,12 @@ const Scoreboard = (() => {
     all.devices.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
     loadPage(true);
   }
+  all.cats.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    query.character = b.dataset.v;
+    all.cats.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    loadPage(true);
+  });
   let searchTimer = 0;
   all.search.addEventListener('input', () => {
     clearTimeout(searchTimer);
@@ -211,6 +217,7 @@ const Scoreboard = (() => {
     all.status.textContent = shown ? 'Loading more…' : 'Loading…';
     const params = new URLSearchParams({ limit: String(PAGE) });
     if (query.device) params.set('device', query.device);
+    if (query.character) params.set('character', query.character);
     if (query.player) params.set('player', query.player);
     if (next) params.set('after', next);
     try {
@@ -220,9 +227,9 @@ const Scoreboard = (() => {
       all.list.append(...data.scores.map((s) => rowFor(s, ++shown)));
       next = data.next; done = !next;
       if (!shown) {
-        all.status.textContent = query.device || query.player ? 'No scores match those filters.' : 'No scores yet. Be the first!';
+        all.status.textContent = query.device || query.character || query.player ? 'No scores match those filters.' : 'No scores yet. Be the first!';
       } else {
-        if (data.total !== undefined) totalText = `${data.total} score${data.total === 1 ? '' : 's'}${query.device || query.player ? ' match' : ''}`;
+        if (data.total !== undefined) totalText = `${data.total} score${data.total === 1 ? '' : 's'}${query.device || query.character || query.player ? ' match' : ''}`;
         all.status.textContent = done ? `Showing all ${shown} score${shown === 1 ? '' : 's'}` : totalText;
       }
       if (!done) { all.list.append(sentinel); if (observer) observer.observe(sentinel); }

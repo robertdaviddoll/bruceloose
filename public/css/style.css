@@ -283,3 +283,13 @@ body:has(#overlay:not(.hidden)) #pauseBtn { visibility: hidden; }
 /* let menus and score lists scroll with a finger (the game itself blocks touch scrolling) */
 #overlay, .scores { touch-action: pan-y; }
 #allList .sentinel { display: block; }
+/* short landscape phones: keep all filters on one row so the list gets the room */
+@media (max-height: 500px) {
+  [data-screen="scores"] h2 { font-size: 20px; }
+  [data-screen="scores"] .filters { width: 100%; max-width: 760px; flex-wrap: nowrap; gap: 6px; }
+  #allDevice .device + .lbl { display: none; }
+  #allDevice button, #allCat button { padding: 6px 10px; font-size: 14px; }
+  #allPlayer { padding: 6px 12px; font-size: 14px; flex-basis: 120px; }
+  #allStatus { font-size: 12px; }
+  [data-screen="scores"] .actions .btn { padding: 6px 18px; }
+}
