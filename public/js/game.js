@@ -110,10 +110,11 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
 
   // things the roommates throw / shout
   const projectiles = [];
+  let shooter = null;   // the roommate whose behaviour is running (so projectiles know who threw them)
   function shoot(kind, x, y, vx, vy, life) {
     const g = new THREE.Group(); g.position.set(x, y, 2.5); world.add(g);
     const info = buildProjectile(kind, g, { box, circle });
-    projectiles.push({ kind, x: x - info.w / 2, y: y - info.h / 2, vx, vy, life, mesh: g, ...info });
+    projectiles.push({ kind, x: x - info.w / 2, y: y - info.h / 2, vx, vy, life, mesh: g, owner: shooter, ...info });
   }
   function clearProjectiles() {
     for (const pr of projectiles) world.remove(pr.mesh);
@@ -587,7 +588,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
       if (!e.alive) { if (e.squash > 0) { e.squash -= dt; if (e.squash <= 0) e.mesh.visible = false; } continue; }
       if (Math.abs(e.x - p.x) > viewW / 2 + 6) continue;
       if (e.stun > 0) { e.stun -= dt; e.vx = 0; }      // stunned roommates can't act
-      else updateRoommate(e, dt, ctx);
+      else { shooter = e; updateRoommate(e, dt, ctx); shooter = null; }
       if (overlap(p, e)) {
         const stomp = p.vy < 0 && prevBottom >= e.y + e.h * 0.45;
         if (p.dash > 0 || stomp) {
@@ -606,7 +607,11 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
       const hitWall = !pr.passThrough && solids.some(s => overlap(pr, s));
       if (pr.life <= 0 || hitWall || pr.y < -8) { world.remove(pr.mesh); projectiles.splice(i, 1); continue; }
       if (overlap(p, pr)) {
-        if (p.dash > 0) { world.remove(pr.mesh); projectiles.splice(i, 1); score += 10; updateHud(); continue; }  // swatted
+        if (p.dash > 0) {                                  // smashed by Bruce's pounce
+          world.remove(pr.mesh); projectiles.splice(i, 1);
+          if (pr.owner && !pr.owner.smashPaid) { pr.owner.smashPaid = true; score += 10; updateHud(); }   // +10 once per thrower
+          continue;
+        }
         if (p.inv <= 0) { hurt(); return; }
       }
     }
@@ -721,6 +726,6 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   requestAnimationFrame(frame);
 
   // expose for debugging in the console
-  window.game = { player, input, get state() { return state; } };
+  window.game = { player, input, enemies, projectiles, get state() { return state; }, get score() { return score; } };
   window.__gameReady = true;
 })();

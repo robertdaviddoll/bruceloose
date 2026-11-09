@@ -14,6 +14,18 @@ Because every score is saved with its version, scores from different minor versi
 
 A three.js side-scroller starring Bruce and Gremlin, with the roommates as enemies.
 
+## Scoring
+
+| What | Points |
+|---|---|
+| Coin | +10 |
+| Knock out a roommate (stomp, or Bruce's pounce) | +100 |
+| Smash a thrown object with Bruce's pounce | +10, **once per roommate** (more smashes from the same roommate give nothing) |
+| Finish: each life left | +500 |
+| Finish: every coin collected | +2,000 |
+
+Checkpoints, Gremlin's growl, Steven P's rescue and time give no points (time only breaks ties). The current level's maximum is 5,040: 79 coins, 7 roommates, 5 thrower smash bonuses, 3 lives and the all-coins bonus.
+
 ## Settings
 
 Copy the example settings file and edit it:

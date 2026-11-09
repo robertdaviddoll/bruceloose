@@ -359,7 +359,7 @@ function updateRoommate(e, dt, ctx) {
 function resetRoommate(e) {
   Object.assign(e, {
     alive: true, x: e.x0, y: e.ground, vx: 0, vy: 0, dir: -1, face: -1, timer: 1, anim: 0,
-    squash: 0, onGround: true, crouch: 0, stun: 0,
+    squash: 0, onGround: true, crouch: 0, stun: 0, smashPaid: false,
     state: e.type === 'steven' ? 'lurk' : e.type === 'cynthea' ? 'party' : 'walk',
     mood: 5, h: e.type === 'val' ? 1.05 : 1.4,
   });
