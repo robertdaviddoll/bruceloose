@@ -296,3 +296,19 @@ body:has(#overlay:not(.hidden)) #pauseBtn { visibility: hidden; }
 
 /* version number on the main menu */
 #overlay .version { font-size: 12px; opacity: .6; margin: 0; font-variant-numeric: tabular-nums; }
+
+/* current version / archived switch on All scores */
+#allEra button { padding-inline: 14px; }
+#allEra button[data-v="archived"][aria-pressed="true"] { background: #b8bcc4; color: #1d2433; }
+/* short landscape phones: two compact filter rows, never clipped; the era switch replaces the title */
+@media (max-height: 500px) {
+  [data-screen="scores"] h2 { display: none; }
+  [data-screen="scores"] .filters { flex-wrap: wrap; row-gap: 6px; }
+  [data-screen="scores"] .filters .seg { flex: none; }
+  [data-screen="scores"] .seg button { padding: 5px 9px; font-size: 13px; }
+  #allPlayer { flex: 1 1 110px; max-width: 200px; padding: 5px 12px; font-size: 14px; }
+}
+@media (max-height: 500px) {
+  /* keep the filters clear of the fullscreen button in the top-right corner */
+  body.touch.fs-ok [data-screen="scores"] .filters { padding-inline: 56px; box-sizing: border-box; }
+}

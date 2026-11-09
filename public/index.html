@@ -120,14 +120,18 @@
     <ol id="fameList" class="scores"></ol>
     <div class="actions">
       <button class="btn" data-back>Back</button>
-      <button class="btn primary" data-go="scores" data-autofocus>See more</button>
+      <button class="btn" data-go="scores" data-era="archived">Archived</button>
+      <button class="btn primary" data-go="scores" data-era="current" data-autofocus>See more</button>
     </div>
   </section>
 
   <!-- All scores: filter + infinite scroll -->
   <section class="screen" data-screen="scores">
-    <h2>All scores</h2>
+    <h2 id="allTitle">All scores</h2>
     <div class="filters" id="allFilters">
+      <span class="seg" id="allEra" role="group" aria-label="Which version">
+        <button type="button" data-v="current" aria-pressed="true">Current</button><button type="button" data-v="archived" aria-pressed="false">Archived</button>
+      </span>
       <span class="seg" id="allDevice" role="group" aria-label="Filter by device"></span>
       <span class="seg" id="allCat" role="group" aria-label="Filter by cat">
         <button type="button" data-v="" aria-pressed="true">All cats</button><button type="button" data-v="bruce" aria-pressed="false">Bruce</button><button type="button" data-v="gremlin" aria-pressed="false">Gremlin</button>

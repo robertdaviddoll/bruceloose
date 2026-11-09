@@ -82,7 +82,10 @@ const Menu = (() => {
   // buttons with data-go="screen" open that screen; data-back goes back
   overlay.addEventListener('click', (e) => {
     const go = e.target.closest('[data-go]');
-    if (go) { sfx('menu'); show(go.dataset.go); return; }
+    if (go) {
+      if (go.dataset.era) Scoreboard.setEra(go.dataset.era);   // All scores: current version or archived
+      sfx('menu'); show(go.dataset.go); return;
+    }
     if (e.target.closest('[data-back]')) { sfx('menu'); back(); }
   });
 

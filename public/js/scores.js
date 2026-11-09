@@ -27,6 +27,9 @@ const Scoreboard = (() => {
     return span;
   }
   const NAME_KEY = 'bruceLoosePlayer';
+  // In-game leaderboards only show the current major.minor version (e.g. 0.1.x).
+  // Scores from other versions (and untagged older ones) are "archived".
+  const SERIES = GAME_CONFIG.version.split('.').slice(0, 2).join('.');
 
   let available = false;   // backend answered /api/health
   let pending = null;      // the run waiting to be saved
@@ -93,7 +96,7 @@ const Scoreboard = (() => {
   }
 
   async function refresh() {
-    try { render((await api('api/scores?limit=10')).scores); }
+    try { render((await api(`api/scores?limit=10&series=${SERIES}`)).scores); }
     catch { list.replaceChildren(); }
   }
 
@@ -118,8 +121,8 @@ const Scoreboard = (() => {
       return;
     }
     try {
-      const { scores } = await api(`api/scores?limit=${limit}`);
-      statusEl.textContent = scores.length ? `Top ${Math.min(limit, scores.length)} of all time` : '';
+      const { scores } = await api(`api/scores?limit=${limit}&series=${SERIES}`);
+      statusEl.textContent = scores.length ? `Top ${Math.min(limit, scores.length)} for v${SERIES}` : `No scores for v${SERIES} yet.`;
       render(scores, target);
     } catch (err) {
       statusEl.textContent = `Couldn't load scores: ${err.message}`;
@@ -141,13 +144,13 @@ const Scoreboard = (() => {
     try { localStorage.setItem(NAME_KEY, name); } catch { /* storage blocked */ }
     saveBtn.disabled = true; status.textContent = 'Saving…';
     try {
-      const { id, rank, total } = await api('api/scores', {
+      const { id, rank, total, series } = await api('api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, ...pending }),
       });
       savedId = id; pending = null; form.hidden = true;
-      status.textContent = total ? `Saved! You're #${rank} of ${total} on the leaderboard.` : `Saved! You're #${rank} on the leaderboard.`;
+      status.textContent = total ? `Saved! You're #${rank} of ${total} on the ${series ? `v${series} ` : ''}leaderboard.` : `Saved! You're #${rank} on the leaderboard.`;
       refresh();
     } catch (err) {
       status.textContent = err.message;
@@ -159,10 +162,11 @@ const Scoreboard = (() => {
   const all = {
     list: document.getElementById('allList'), status: document.getElementById('allStatus'),
     filters: document.getElementById('allFilters'), devices: document.getElementById('allDevice'), cats: document.getElementById('allCat'),
+    era: document.getElementById('allEra'), title: document.getElementById('allTitle'),
     search: document.getElementById('allPlayer'), names: document.getElementById('allPlayers'),
   };
   const PAGE = 25;
-  const query = { device: '', character: '', player: '' };
+  const query = { era: 'current', device: '', character: '', player: '' };
   let next = null, done = false, loading = false, shown = 0, generation = 0, totalText = '';
   const sentinel = document.createElement('li');                 // when this scrolls into view, load more
   sentinel.className = 'sentinel'; sentinel.setAttribute('aria-hidden', 'true');
@@ -186,6 +190,17 @@ const Scoreboard = (() => {
     all.devices.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
     loadPage(true);
   }
+  // current version vs archived
+  all.era.querySelector('[data-v="current"]').textContent = `v${SERIES}`;
+  function syncEra() {
+    all.era.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === query.era)));
+    all.title.textContent = query.era === 'archived' ? 'Archived scores' : 'All scores';
+  }
+  function setEra(era) { query.era = era === 'archived' ? 'archived' : 'current'; syncEra(); }
+  all.era.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    setEra(b.dataset.v); loadPage(true);
+  });
   all.cats.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     query.character = b.dataset.v;
@@ -215,7 +230,8 @@ const Scoreboard = (() => {
     const gen = generation;
     loading = true;
     all.status.textContent = shown ? 'Loading more…' : 'Loading…';
-    const params = new URLSearchParams({ limit: String(PAGE) });
+    const params = new URLSearchParams({ limit: String(PAGE), series: SERIES });
+    if (query.era === 'archived') params.set('archived', '1');
     if (query.device) params.set('device', query.device);
     if (query.character) params.set('character', query.character);
     if (query.player) params.set('player', query.player);
@@ -227,7 +243,8 @@ const Scoreboard = (() => {
       all.list.append(...data.scores.map((s) => rowFor(s, ++shown)));
       next = data.next; done = !next;
       if (!shown) {
-        all.status.textContent = query.device || query.character || query.player ? 'No scores match those filters.' : 'No scores yet. Be the first!';
+        all.status.textContent = query.device || query.character || query.player ? 'No scores match those filters.'
+          : query.era === 'archived' ? 'No archived scores from older versions.' : `No scores for v${SERIES} yet. Be the first!`;
       } else {
         if (data.total !== undefined) totalText = `${data.total} score${data.total === 1 ? '' : 's'}${query.device || query.character || query.player ? ' match' : ''}`;
         all.status.textContent = done ? `Showing all ${shown} score${shown === 1 ? '' : 's'}` : totalText;
@@ -250,6 +267,7 @@ const Scoreboard = (() => {
       all.status.textContent = 'Scores need the score server. Start the game with docker compose (or npm run dev in server/).';
       return;
     }
+    syncEra();
     loadPage(true);
     try {   // player name suggestions for the search box
       const { players } = await api('api/players');
@@ -263,7 +281,7 @@ const Scoreboard = (() => {
   };
 
   // the "See more" button inside the end-of-game panel (the panel swallows clicks, so wire it here)
-  document.getElementById('endSeeMore').addEventListener('click', () => Menu.show('scores'));
+  document.getElementById('endSeeMore').addEventListener('click', () => { setEra('current'); Menu.show('scores'); });
 
-  return { show, hide, loadInto, openAll, scrollAll, cycleDevice };
+  return { show, hide, loadInto, openAll, scrollAll, cycleDevice, setEra };
 })();

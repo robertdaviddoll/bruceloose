@@ -2,10 +2,11 @@
 // Zero dependencies: Node's built-in http + node:sqlite (Node 22.13+).
 //
 //   GET  /api/health              -> { ok: true }
-//   GET  /api/scores?limit=25&device=phone&character=bruce&player=ste&after=CURSOR
+//   GET  /api/scores?limit=25&series=0.1&archived=1&device=phone&character=bruce&player=ste&after=CURSOR
+//                                 series=0.1 -> only versions 0.1.x; add archived=1 for everything else (older/untagged)
 //                                 -> { scores, next, total } best first; pass `next` back as `after` for the next page
 //   GET  /api/players             -> { players: [names] } for search suggestions
-//   POST /api/scores              -> save a score, returns { id, rank, total }
+//   POST /api/scores              -> save a score, returns { id, rank, total, series } (rank within the same major.minor)
 //
 // Set STATIC_DIR (the public/ folder) to also serve the game files, handy for running without Docker.
 
@@ -57,8 +58,10 @@ const players = db.prepare(`
 
 // One page of scores, best first. Filters are optional. Paging uses a cursor (the last row's
 // score/time/id) instead of an offset, so new saves while someone scrolls don't shift the pages.
-function queryScores({ limit, device, character, player, after }) {
+function queryScores({ limit, series, archived, device, character, player, after }) {
   const where = [], params = [];
+  if (series && !archived) { where.push('version LIKE ?'); params.push(`${series}.%`); }
+  if (series && archived) { where.push('(version IS NULL OR version NOT LIKE ?)'); params.push(`${series}.%`); }
   if (device) { where.push('device = ?'); params.push(device); }
   if (character) { where.push('character = ?'); params.push(character); }
   if (player) { where.push(`name LIKE ? ESCAPE '\\'`); params.push(`%${player.replace(/[\\%_]/g, (m) => '\\' + m)}%`); }
@@ -75,9 +78,6 @@ function queryScores({ limit, device, character, player, after }) {
   const last = rows[rows.length - 1];
   return { scores: rows, next: more ? `${last.score}.${last.timeMs}.${last.id}` : null, ...(total !== undefined && { total }) };
 }
-const rankOf = db.prepare(`
-  SELECT COUNT(*) AS ahead FROM scores
-  WHERE score > ? OR (score = ? AND time_ms < ?) OR (score = ? AND time_ms = ? AND id < ?)`);
 
 // ---------- validation ----------
 const CHARACTERS = new Set(['bruce', 'gremlin']);
@@ -174,6 +174,9 @@ const server = http.createServer(async (req, res) => {
       const limit = Math.min(50, Math.max(1, parseInt(q.get('limit'), 10) || 10));
       const device = q.get('device') || '';
       if (device && !DEVICES.has(device)) return send(res, 400, { error: 'device must be "phone", "tablet" or "desktop".' });
+      const series = q.get('series') || '';
+      if (series && !/^\d{1,4}\.\d{1,4}$/.test(series)) return send(res, 400, { error: 'series must look like 0.1 (major.minor).' });
+      const archived = q.get('archived') === '1';
       const character = q.get('character') || '';
       if (character && !CHARACTERS.has(character)) return send(res, 400, { error: 'character must be "bruce" or "gremlin".' });
       const player = (q.get('player') || '').trim();
@@ -184,7 +187,7 @@ const server = http.createServer(async (req, res) => {
         if (!m) return send(res, 400, { error: 'after must be the "next" value from a previous page.' });
         after = { score: Number(m[1]), timeMs: Number(m[2]), id: Number(m[3]) };
       }
-      return send(res, 200, queryScores({ limit, device, character, player, after }));
+      return send(res, 200, queryScores({ limit, series, archived, device, character, player, after }));
     }
 
     if (url.pathname === '/api/players' && req.method === 'GET') {
@@ -198,9 +201,15 @@ const server = http.createServer(async (req, res) => {
       const { lastInsertRowid } = insertScore.run(v.name, v.score, v.coins, v.totalCoins, v.character, v.result, v.timeMs, v.device,
                                                   v.checkpoints, v.totalCheckpoints, v.version);
       const id = Number(lastInsertRowid);
-      const { ahead } = rankOf.get(v.score, v.score, v.timeMs, v.score, v.timeMs, id);
-      const { n: total } = db.prepare('SELECT COUNT(*) AS n FROM scores').get();
-      return send(res, 201, { id, rank: ahead + 1, total });
+      // rank among scores from the same major.minor version (the leaderboard players see in-game)
+      const series = v.version ? v.version.split('.').slice(0, 2).join('.') : null;
+      const same = series ? 'version LIKE ? AND ' : '';
+      const sp = series ? [`${series}.%`] : [];
+      const { ahead } = db.prepare(`SELECT COUNT(*) AS ahead FROM scores WHERE ${same}
+        (score > ? OR (score = ? AND time_ms < ?) OR (score = ? AND time_ms = ? AND id < ?))`)
+        .get(...sp, v.score, v.score, v.timeMs, v.score, v.timeMs, id);
+      const { n: total } = db.prepare(`SELECT COUNT(*) AS n FROM scores ${series ? 'WHERE version LIKE ?' : ''}`).get(...sp);
+      return send(res, 201, { id, rank: ahead + 1, total, series });
     }
 
     if (url.pathname.startsWith('/api/')) return send(res, 404, { error: 'Not found.' });

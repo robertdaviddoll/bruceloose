@@ -8,5 +8,5 @@
 //   MAJOR (x.0.0) - not used yet.
 const GAME_CONFIG = {
   name: 'Bruce Loose',
-  version: '0.1.0',
+  version: '0.1.1',
 };

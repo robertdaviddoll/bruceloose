@@ -10,7 +10,7 @@ Versions are `MAJOR.MINOR.PATCH`, set in `public/config.js`:
 - **MINOR** (second number): bump for any change to how the game plays or how score is counted, such as level layout, physics, abilities, enemies, points or lives. Reset PATCH to 0. Example: 0.0.15 → 0.1.0.
 - **MAJOR** (first number): not used yet.
 
-Because every score is saved with its version, scores from different minor versions were played under different rules.
+Because every score is saved with its version, scores from different minor versions were played under different rules. In-game leaderboards (Hall of Fame, end-of-game top 10, All scores) only show the current major.minor (e.g. all 0.1.x scores). Everything else is under **Archived**.
 
 A three.js side-scroller starring Bruce and Gremlin, with the roommates as enemies.
 
@@ -98,9 +98,9 @@ Menus work with touch/mouse, keyboard (arrows, Enter/Space, Esc to go back) and 
 | Method | Path | What it does |
 |---|---|---|
 | GET | `/api/health` | `{ "ok": true }` |
-| GET | `/api/scores?limit=25&device=phone&character=bruce&player=ste&after=…` | Scores, best first (max 50 per page). Optional `device` (`phone`/`tablet`/`desktop`), `character` (`bruce`/`gremlin`) and `player` (name contains, any case) filters. Returns `{ scores, next, total }`; pass `next` back as `after` for the next page (`total` only on the first page). |
+| GET | `/api/scores?limit=25&series=0.1&archived=1&device=phone&character=bruce&player=ste&after=…` | Scores, best first (max 50 per page). `series=0.1` limits to versions 0.1.x; add `archived=1` for every other version (including untagged older scores). Optional `device` (`phone`/`tablet`/`desktop`), `character` (`bruce`/`gremlin`) and `player` (name contains, any case) filters. Returns `{ scores, next, total }`; pass `next` back as `after` for the next page (`total` only on the first page). |
 | GET | `/api/players` | Player names, for search suggestions |
-| POST | `/api/scores` | Save `{ name, score, coins, totalCoins, character, result, timeMs, device, checkpoints, totalCheckpoints }`, returns `{ id, rank, total }`. Also accepts `version` (e.g. `0.0.14`) |
+| POST | `/api/scores` | Save `{ name, score, coins, totalCoins, character, result, timeMs, device, checkpoints, totalCheckpoints }`, returns `{ id, rank, total, series }` (rank and total are within the same major.minor version). Also accepts `version` (e.g. `0.1.1`) |
 
 `device` is `phone`, `tablet` or `desktop`, and `checkpoints` / `totalCheckpoints` count checkpoints passed (all optional; shown as icons on the score lists). Names are 1-16 characters. Saves are limited per IP (`SAVES_PER_MINUTE`, default 6 per minute).
 
