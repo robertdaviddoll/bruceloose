@@ -341,6 +341,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
   document.getElementById('startBtn').addEventListener('click', startGame);
   document.getElementById('againBtn').addEventListener('click', startGame);
   document.getElementById('resumeBtn').addEventListener('click', resume);
+  document.getElementById('restartBtn').addEventListener('click', startGame);   // same cat, fresh run
   document.getElementById('pauseQuit').addEventListener('click', toMainMenu);
   document.getElementById('endQuit').addEventListener('click', toMainMenu);
   Menu.onRootBack('pause', resume);                       // Back / Esc on the pause screen resumes
