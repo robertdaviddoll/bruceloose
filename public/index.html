@@ -117,6 +117,23 @@
     <h2>Hall of Fame</h2>
     <p id="fameStatus" class="note"></p>
     <ol id="fameList" class="scores"></ol>
+    <div class="actions">
+      <button class="btn" data-back>Back</button>
+      <button class="btn primary" data-go="scores" data-autofocus>See more</button>
+    </div>
+  </section>
+
+  <!-- All scores: filter + infinite scroll -->
+  <section class="screen" data-screen="scores">
+    <h2>All scores</h2>
+    <div class="filters" id="allFilters">
+      <span class="seg" id="allDevice" role="group" aria-label="Filter by device"></span>
+      <input id="allPlayer" type="search" list="allPlayers" maxlength="16" placeholder="Search players"
+             aria-label="Search players" autocomplete="off" spellcheck="false" enterkeyhint="search">
+      <datalist id="allPlayers"></datalist>
+    </div>
+    <p id="allStatus" class="note" role="status"></p>
+    <ol id="allList" class="scores"></ol>
     <div class="actions"><button class="btn primary" data-back data-autofocus>Back</button></div>
   </section>
 
@@ -145,6 +162,7 @@
       <p id="scoreStatus" role="status"></p>
       <h3>Top 10</h3>
       <ol id="leaderboard" class="scores"></ol>
+      <button class="btn small" id="endSeeMore" type="button">See more</button>
     </div>
     <div class="actions">
       <button class="btn primary" id="againBtn" data-autofocus>Play again</button>

@@ -12,6 +12,7 @@ const Menu = (() => {
   const onEnterHooks = {};   // name -> fn when the screen opens
   const onSideHooks = {};    // name -> fn(dir) for left/right; return true if handled
   const onRootBack = {};     // name -> fn when Back is pressed with nowhere to go back to
+  const onVertHooks = {};    // name -> fn(dir) for up/down; return true if handled
 
   const visible = () => !overlay.classList.contains('hidden');
   const focusables = () => [...screens[current].querySelectorAll('button, input')]
@@ -74,6 +75,7 @@ const Menu = (() => {
       }
       if (onSideHooks[current] && onSideHooks[current](d)) return;
     }
+    if ((action === 'up' || action === 'down') && onVertHooks[current] && onVertHooks[current](action === 'up' ? -1 : 1)) return;
     moveFocus(action === 'up' || action === 'left' ? -1 : 1);
   }
 
@@ -141,6 +143,12 @@ const Menu = (() => {
   onEnterHooks.info = renderInfo;
   onSideHooks.info = stepInfo;
 
+  // ---------- All scores ("See more") ----------
+  // up/down scroll the list, left/right switch the device filter (unless typing in the search box)
+  onEnterHooks.scores = () => Scoreboard.openAll();
+  onVertHooks.scores = (d) => Scoreboard.scrollAll(d);
+  onSideHooks.scores = (d) => { if (document.activeElement && document.activeElement.id === 'allPlayer') return false; Scoreboard.cycleDevice(d); return true; };
+
   // ---------- Hall of Fame ----------
   onEnterHooks.fame = () => Scoreboard.loadInto(document.getElementById('fameList'), document.getElementById('fameStatus'), 20);
 
@@ -151,6 +159,7 @@ const Menu = (() => {
     onEnter(name, fn) { const prev = onEnterHooks[name]; onEnterHooks[name] = prev ? () => { prev(); fn(); } : fn; },
     onSide(name, fn) { onSideHooks[name] = fn; },
     onRootBack(name, fn) { onRootBack[name] = fn; },
+    onVertical(name, fn) { onVertHooks[name] = fn; },
     drawPortrait: null,   // set by game.js: (canvas, characterInfo) => void
   };
   return api;

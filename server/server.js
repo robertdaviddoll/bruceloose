@@ -2,7 +2,9 @@
 // Zero dependencies: Node's built-in http + node:sqlite (Node 22.13+).
 //
 //   GET  /api/health              -> { ok: true }
-//   GET  /api/scores?limit=10     -> top scores
+//   GET  /api/scores?limit=25&device=phone&player=ste&after=CURSOR
+//                                 -> { scores, next, total } best first; pass `next` back as `after` for the next page
+//   GET  /api/players             -> { players: [names] } for search suggestions
 //   POST /api/scores              -> save a score, returns { id, rank }
 //
 // Set STATIC_DIR (the public/ folder) to also serve the game files, handy for running without Docker.
@@ -47,10 +49,30 @@ addColumn('total_checkpoints', 'INTEGER');      // checkpoints in the level
 const insertScore = db.prepare(`
   INSERT INTO scores (name, score, coins, total_coins, character, result, time_ms, device, checkpoints, total_checkpoints)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-const topScores = db.prepare(`
-  SELECT id, name, score, coins, total_coins AS totalCoins, character, result,
-         time_ms AS timeMs, device, checkpoints, total_checkpoints AS totalCheckpoints, created_at AS createdAt
-  FROM scores ORDER BY score DESC, time_ms ASC, id ASC LIMIT ?`);
+const SCORE_COLUMNS = `id, name, score, coins, total_coins AS totalCoins, character, result,
+  time_ms AS timeMs, device, checkpoints, total_checkpoints AS totalCheckpoints, created_at AS createdAt`;
+const players = db.prepare(`
+  SELECT name FROM scores GROUP BY name COLLATE NOCASE ORDER BY MAX(score) DESC LIMIT 200`);
+
+// One page of scores, best first. Filters are optional. Paging uses a cursor (the last row's
+// score/time/id) instead of an offset, so new saves while someone scrolls don't shift the pages.
+function queryScores({ limit, device, player, after }) {
+  const where = [], params = [];
+  if (device) { where.push('device = ?'); params.push(device); }
+  if (player) { where.push(`name LIKE ? ESCAPE '\\'`); params.push(`%${player.replace(/[\\%_]/g, (m) => '\\' + m)}%`); }
+  const filters = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const total = after ? undefined : db.prepare(`SELECT COUNT(*) AS n FROM scores ${filters}`).get(...params).n;
+  if (after) {
+    where.push('(score < ? OR (score = ? AND time_ms > ?) OR (score = ? AND time_ms = ? AND id > ?))');
+    params.push(after.score, after.score, after.timeMs, after.score, after.timeMs, after.id);
+  }
+  const rows = db.prepare(`SELECT ${SCORE_COLUMNS} FROM scores ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+                           ORDER BY score DESC, time_ms ASC, id ASC LIMIT ?`).all(...params, limit + 1);
+  const more = rows.length > limit;
+  if (more) rows.pop();
+  const last = rows[rows.length - 1];
+  return { scores: rows, next: more ? `${last.score}.${last.timeMs}.${last.id}` : null, ...(total !== undefined && { total }) };
+}
 const rankOf = db.prepare(`
   SELECT COUNT(*) AS ahead FROM scores
   WHERE score > ? OR (score = ? AND time_ms < ?) OR (score = ? AND time_ms = ? AND id < ?)`);
@@ -144,8 +166,23 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/health' && req.method === 'GET') return send(res, 200, { ok: true });
 
     if (url.pathname === '/api/scores' && req.method === 'GET') {
-      const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit'), 10) || 10));
-      return send(res, 200, { scores: topScores.all(limit) });
+      const q = url.searchParams;
+      const limit = Math.min(50, Math.max(1, parseInt(q.get('limit'), 10) || 10));
+      const device = q.get('device') || '';
+      if (device && !DEVICES.has(device)) return send(res, 400, { error: 'device must be "phone", "tablet" or "desktop".' });
+      const player = (q.get('player') || '').trim();
+      if (player.length > 16) return send(res, 400, { error: 'player search can be at most 16 characters.' });
+      let after = null;
+      if (q.get('after')) {
+        const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(q.get('after'));
+        if (!m) return send(res, 400, { error: 'after must be the "next" value from a previous page.' });
+        after = { score: Number(m[1]), timeMs: Number(m[2]), id: Number(m[3]) };
+      }
+      return send(res, 200, queryScores({ limit, device, player, after }));
+    }
+
+    if (url.pathname === '/api/players' && req.method === 'GET') {
+      return send(res, 200, { players: players.all().map((r) => r.name) });
     }
 
     if (url.pathname === '/api/scores' && req.method === 'POST') {

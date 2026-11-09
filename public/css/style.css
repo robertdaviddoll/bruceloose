@@ -260,3 +260,26 @@ body:has(#overlay:not(.hidden)) #pauseBtn { visibility: hidden; }
 .scores .score { display: flex; align-items: center; gap: 10px; }
 .scores .cp { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 800; color: #9be89b; }
 .scores .cp svg { width: 15px; height: 15px; }
+
+/* ---------- All scores ("See more") ---------- */
+[data-screen="scores"].active { height: 100%; max-height: 100%; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; width: min(560px, 100%); }
+#allDevice button { display: inline-flex; align-items: center; gap: 5px; }
+#allDevice .device { width: 16px; height: 16px; display: inline-flex; }
+#allDevice .device svg { width: 100%; height: 100%; }
+#allPlayer {
+  flex: 1 1 160px; min-width: 0; max-width: 240px; padding: 9px 12px; border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.5); background: rgba(0,0,0,.25); color: #fff; font: inherit; font-size: 16px;
+  user-select: text; -webkit-user-select: text; touch-action: auto;
+}
+#allPlayer::placeholder { color: rgba(255,255,255,.6); }
+#allPlayer:focus { outline: none; border-color: #ffd23f; }
+#allList { flex: 1 1 auto; min-height: 120px; max-height: none; width: min(560px, 100%); overscroll-behavior: contain; touch-action: pan-y; }
+#allList .sentinel { height: 1px; padding: 0; background: none; }
+#allStatus { min-height: 1.2em; margin: 0; }
+.btn.small { font-size: 14px; padding: 7px 16px; align-self: center; }
+/* narrow phones: icons only on the device filter */
+@media (max-width: 480px) { #allDevice .device + .lbl { display: none; } #allDevice button { padding: 8px 11px; } }
+/* let menus and score lists scroll with a finger (the game itself blocks touch scrolling) */
+#overlay, .scores { touch-action: pan-y; }
+#allList .sentinel { display: block; }

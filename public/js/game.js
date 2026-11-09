@@ -378,6 +378,11 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module
                       ArrowRight: 'right', KeyD: 'right', Escape: 'back', Backspace: 'back' };
   addEventListener('keydown', (e) => {
     if (state !== 'play') {
+      // typing in a text box (player search): leave keys alone, Esc just leaves the box
+      if (e.target instanceof HTMLInputElement && e.target.type !== 'range') {
+        if (e.code === 'Escape') e.target.blur();
+        return;
+      }
       // menus: arrows move between buttons, Enter/Space press the focused button (browser default), Esc goes back
       if (e.code === 'KeyP' && state === 'paused') { resume(); return; }
       const action = MENU_KEYS[e.code];

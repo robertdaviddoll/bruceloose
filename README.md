@@ -48,7 +48,7 @@ Or just open `public/index.html` in a browser to play without saving scores.
 - **Play:** pick Bruce or Gremlin, then Start.
 - **Options:** sound on/off, volume, vibration on/off, and touch buttons (Auto / Always / Off). Saved in the browser.
 - **Characters:** bios, what each character does in the game, and a tip for beating them. Text lives in `public/js/characters.js`.
-- **Hall of Fame:** top 20 saved scores (needs the score server).
+- **Hall of Fame:** top 20 saved scores (needs the score server). **See more** (here and on the end-of-game leaderboard) opens every score, with filters for device and player; more load as you scroll.
 
 Menus work with touch/mouse, keyboard (arrows, Enter/Space, Esc to go back) and controllers (d-pad, A to choose, B to go back). On the cat picker, Enter or A on a cat starts the game with that cat.
 
@@ -74,7 +74,8 @@ Menus work with touch/mouse, keyboard (arrows, Enter/Space, Esc to go back) and 
 | Method | Path | What it does |
 |---|---|---|
 | GET | `/api/health` | `{ "ok": true }` |
-| GET | `/api/scores?limit=10` | Top scores (max 50) |
+| GET | `/api/scores?limit=25&device=phone&player=ste&after=…` | Scores, best first (max 50 per page). Optional `device` (`phone`/`tablet`/`desktop`) and `player` (name contains, any case) filters. Returns `{ scores, next, total }`; pass `next` back as `after` for the next page (`total` only on the first page). |
+| GET | `/api/players` | Player names, for search suggestions |
 | POST | `/api/scores` | Save `{ name, score, coins, totalCoins, character, result, timeMs, device, checkpoints, totalCheckpoints }`, returns `{ id, rank }` |
 
 `device` is `phone`, `tablet` or `desktop`, and `checkpoints` / `totalCheckpoints` count checkpoints passed (all optional; shown as icons on the score lists). Names are 1-16 characters. Saves are limited per IP (`SAVES_PER_MINUTE`, default 6 per minute).

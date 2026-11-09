@@ -60,12 +60,16 @@ const Scoreboard = (() => {
       target.replaceChildren(li);
       return;
     }
-    target.replaceChildren(...scores.map((s, i) => {
+    target.replaceChildren(...scores.map((s, i) => rowFor(s, i + 1)));
+  }
+
+  // one leaderboard row
+  function rowFor(s, rank) {
       const li = document.createElement('li');
       if (s.id === savedId) li.classList.add('me');
       const cell = (cls, text) => { const span = document.createElement('span'); span.className = cls; span.textContent = text; return span; };
       li.append(
-        cell('rank', i + 1),
+        cell('rank', rank),
         (() => { const n = cell('name', ''); n.append(deviceIcon(s.device), cell('who', s.name)); return n; })(),
         cell('meta', `${CAT_NAMES[s.character] || s.character} · ${s.result === 'won' ? 'won' : 'died'} · ${fmtTime(s.timeMs)}`),
         (() => {
@@ -86,7 +90,6 @@ const Scoreboard = (() => {
         })(),
       );
       return li;
-    }));
   }
 
   async function refresh() {
@@ -152,5 +155,108 @@ const Scoreboard = (() => {
     }
   });
 
-  return { show, hide, loadInto };
+  // ---------- "See more": every score, filter by device / player, loads more as you scroll ----------
+  const all = {
+    list: document.getElementById('allList'), status: document.getElementById('allStatus'),
+    filters: document.getElementById('allFilters'), devices: document.getElementById('allDevice'),
+    search: document.getElementById('allPlayer'), names: document.getElementById('allPlayers'),
+  };
+  const PAGE = 25;
+  const query = { device: '', player: '' };
+  let next = null, done = false, loading = false, shown = 0, generation = 0, totalText = '';
+  const sentinel = document.createElement('li');                 // when this scrolls into view, load more
+  sentinel.className = 'sentinel'; sentinel.setAttribute('aria-hidden', 'true');
+
+  // device filter buttons: All + one per device, with the same icons as the rows
+  const DEVICE_FILTERS = [['', 'All'], ['phone', 'Phone'], ['tablet', 'Tablet'], ['desktop', 'Computer']];
+  for (const [v, label] of DEVICE_FILTERS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.v = v; b.setAttribute('aria-pressed', String(v === ''));
+    if (v) { const icon = deviceIcon(v); icon.removeAttribute('role'); icon.removeAttribute('aria-label'); icon.removeAttribute('title'); b.append(icon); }
+    const t = document.createElement('span'); t.className = 'lbl'; t.textContent = label; b.append(t);
+    b.title = v ? `Only scores played on a ${label.toLowerCase()}` : 'Every device';
+    all.devices.append(b);
+  }
+  all.devices.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    setDevice(b.dataset.v);
+  });
+  function setDevice(v) {
+    query.device = v;
+    all.devices.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
+    loadPage(true);
+  }
+  let searchTimer = 0;
+  all.search.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { query.player = all.search.value.trim(); loadPage(true); }, 250);
+  });
+
+  const nearBottom = () => sentinel.isConnected &&
+    sentinel.getBoundingClientRect().top < all.list.getBoundingClientRect().bottom + 200;
+  const observer = 'IntersectionObserver' in window
+    ? new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) loadPage(false); },
+                               { root: all.list, rootMargin: '0px 0px 200px 0px' })
+    : null;
+  all.list.addEventListener('scroll', () => { if (!observer && nearBottom()) loadPage(false); }, { passive: true });
+
+  async function loadPage(reset) {
+    if (reset) {
+      generation++; next = null; done = false; loading = false; shown = 0;
+      all.list.replaceChildren(); all.list.scrollTop = 0;
+    }
+    if (loading || done) return;
+    const gen = generation;
+    loading = true;
+    all.status.textContent = shown ? 'Loading more…' : 'Loading…';
+    const params = new URLSearchParams({ limit: String(PAGE) });
+    if (query.device) params.set('device', query.device);
+    if (query.player) params.set('player', query.player);
+    if (next) params.set('after', next);
+    try {
+      const data = await api(`api/scores?${params}`);
+      if (gen !== generation) return;                              // filters changed while loading
+      sentinel.remove();
+      all.list.append(...data.scores.map((s) => rowFor(s, ++shown)));
+      next = data.next; done = !next;
+      if (!shown) {
+        all.status.textContent = query.device || query.player ? 'No scores match those filters.' : 'No scores yet. Be the first!';
+      } else {
+        if (data.total !== undefined) totalText = `${data.total} score${data.total === 1 ? '' : 's'}${query.device || query.player ? ' match' : ''}`;
+        all.status.textContent = done ? `Showing all ${shown} score${shown === 1 ? '' : 's'}` : totalText;
+      }
+      if (!done) { all.list.append(sentinel); if (observer) observer.observe(sentinel); }
+    } catch (err) {
+      if (gen === generation) all.status.textContent = `Couldn't load scores: ${err.message}`;
+    } finally {
+      if (gen === generation) loading = false;
+    }
+    // short pages may not fill the box: keep loading until it can scroll
+    if (gen === generation && !done && nearBottom()) loadPage(false);
+  }
+
+  async function openAll() {
+    await ready;
+    all.filters.hidden = !available;
+    if (!available) {
+      all.list.replaceChildren();
+      all.status.textContent = 'Scores need the score server. Start the game with docker compose (or npm run dev in server/).';
+      return;
+    }
+    loadPage(true);
+    try {   // player name suggestions for the search box
+      const { players } = await api('api/players');
+      all.names.replaceChildren(...players.map((n) => { const o = document.createElement('option'); o.value = n; return o; }));
+    } catch { /* suggestions are optional */ }
+  }
+  const scrollAll = (dir) => { all.list.scrollBy({ top: dir * 160, behavior: 'smooth' }); return true; };
+  const cycleDevice = (dir) => {
+    const i = DEVICE_FILTERS.findIndex(([v]) => v === query.device);
+    setDevice(DEVICE_FILTERS[(i + dir + DEVICE_FILTERS.length) % DEVICE_FILTERS.length][0]);
+  };
+
+  // the "See more" button inside the end-of-game panel (the panel swallows clicks, so wire it here)
+  document.getElementById('endSeeMore').addEventListener('click', () => Menu.show('scores'));
+
+  return { show, hide, loadInto, openAll, scrollAll, cycleDevice };
 })();
